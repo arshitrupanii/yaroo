@@ -8,6 +8,22 @@ export const signup = async (req, res) => {
     const { firstname, email, password } = req.body;
 
     try {
+        if (!firstname || !email || !password) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        if (firstname.length < 2 || firstname.length > 30) {
+            return res.status(400).json({ message: 'Firstname must be between 2 and 30 characters' });
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ message: 'Invalid email format' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters' });
+        }
+
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
@@ -45,6 +61,18 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     try {
+        if (!email || !password) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ message: 'Invalid email format' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters' });
+        }
+
         const user = await User.findOne({ email });
 
         if (!user) {
