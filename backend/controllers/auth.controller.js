@@ -124,7 +124,7 @@ export const updateProfile = async (req, res) => {
 
         // it compress image and save
         const uploadResponse = await cloudinary.uploader.upload(profilePicture, {
-            folder: "uploads",
+            folder: "yaroo/profile_pictures",
             quality: "auto:eco",
             fetch_format: "auto",
             width: 1600,
