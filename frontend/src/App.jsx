@@ -12,8 +12,6 @@ import { Loader } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/useAuhstore'
 import { Usethemes } from './store/useTheme'
-import axios from 'axios'
-import { Axiosinstance } from './lib/axios'
 
 function App() {
   const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
