@@ -180,7 +180,24 @@ export const forgotPassword = async (req, res) => {
         throw new ApiError(400, 'Valid email is required', { code: 'VALIDATION_ERROR' });
     }
 
-    const user = await User.findOne({ email }).select("+passwordResetToken +passwordResetExpires");
+export const updateProfile = async (req, res) => {
+    try {
+        const { profilePicture } = req.body;
+
+        const userId = req.user._id;
+
+        if (!profilePicture) {
+            return res.status(400).json({ message: "Profile pic is required" });
+        }
+
+        // it compress image and save
+        const uploadResponse = await cloudinary.uploader.upload(profilePicture, {
+            folder: "yaroo/profile_pictures",
+            quality: "auto:eco",
+            fetch_format: "auto",
+            width: 1600,
+            crop: "limit"
+        });
 
     if (!user) {
         return res.status(200).json(forgotPasswordResponse);
