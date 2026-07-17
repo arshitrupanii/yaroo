@@ -30,7 +30,7 @@ function App() {
   )
 
   return (
-    <div data-theme = {theme}>
+    <div data-theme={theme} className="min-h-screen bg-base-100 text-base-content">
       <Navbar />
       
       <Routes>
@@ -47,11 +47,11 @@ function App() {
         toastOptions={{
           duration: 3000,
           style: {
-            borderRadius: "8px",
+            borderRadius: "6px",
             background: "hsl(var(--b1))",
             color: "hsl(var(--bc))",
             border: "1px solid hsl(var(--b3))",
-            boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
           },
           error: {
             style: {

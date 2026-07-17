@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon backend/server.js ",
     "start": "node backend/server.js",
+    "seed": "node backend/scripts/seedSampleData.js",
     "build": "npm install && npm install --prefix frontend --include=dev && npm run build --prefix frontend"
   },
   "keywords": [],

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatstore";
 import { useAuthStore } from "../store/useAuhstore.js";
-import { Check, Search, UserPlus, X } from "lucide-react";
+import { Check, Inbox, Search, UserPlus, UsersRound, X } from "lucide-react";
 
 const Sidebar = () => {
   const {
@@ -61,7 +61,6 @@ const Sidebar = () => {
   const filteredUsers = showOnlineOnly && !isSearching
     ? users.filter((user) => onlineUsers.includes(user._id))
     : users;
-  const onlineCount = Math.max(onlineUsers.length - 1, 0);
   const skeletonRows = Array(7).fill(null);
 
   const renderUserAction = (user) => {
@@ -103,15 +102,17 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="h-full w-full lg:w-80 border-r border-base-300 flex flex-col bg-base-100">
-      <div className="border-b border-base-300 w-full p-4 flex-shrink-0 bg-base-100">
+    <aside className="flex h-full min-h-0 w-full flex-col border-r border-base-300/70 bg-base-100 lg:w-72">
+      <div className="w-full flex-shrink-0 border-b border-base-300/70 bg-base-100 p-3">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="font-semibold leading-tight truncate">Chats</h2>
-            <p className="text-xs text-base-content/50">Friends and requests</p>
+            <h2 className="flex items-center gap-2 truncate text-sm font-semibold leading-tight">
+              <UsersRound className="size-4 text-base-content/50" />
+              Chats
+            </h2>
           </div>
           {friendRequests.received.length > 0 && (
-            <span className="badge badge-primary badge-sm">{friendRequests.received.length}</span>
+            <span className="badge badge-primary badge-sm rounded-full">{friendRequests.received.length}</span>
           )}
         </div>
 
@@ -122,7 +123,7 @@ const Sidebar = () => {
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Search username"
-            className="input input-bordered input-sm w-full pl-9 pr-9 rounded-md"
+            className="input input-bordered input-sm w-full rounded-lg pl-9 pr-9"
           />
           {searchText && (
             <button
@@ -137,24 +138,33 @@ const Sidebar = () => {
         </div>
 
         {!isSearching && (
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <label className="cursor-pointer flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => setShowOnlineOnly(false)}
+              className={`btn btn-xs h-7 min-h-7 rounded-full px-3 ${!showOnlineOnly ? "btn-primary" : "btn-ghost text-base-content/70"}`}
+            >
+              All
+            </button>
+            <label className={`btn btn-xs h-7 min-h-7 rounded-full px-3 ${showOnlineOnly ? "btn-primary" : "btn-ghost text-base-content/70"}`}>
               <input
                 type="checkbox"
                 checked={showOnlineOnly}
                 onChange={(e) => setShowOnlineOnly(e.target.checked)}
-              className="toggle toggle-sm"
+                className="hidden"
               />
-              <span className="text-sm">Online only</span>
+              Online
             </label>
-            <span className="text-xs text-zinc-500">{onlineCount} online</span>
           </div>
         )}
       </div>
 
       {!isSearching && friendRequests.received.length > 0 && (
-        <div className="border-b border-base-300 p-3 space-y-2 bg-base-200/40">
-          <div className="text-xs font-semibold text-base-content/60">Friend requests</div>
+        <div className="space-y-2 border-b border-base-300/70 p-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-base-content/60">
+            <Inbox className="size-3.5" />
+            Friend requests
+          </div>
           {friendRequests.received.map((user) => (
             <div key={user._id} className="flex items-center gap-2">
               <img src={user.profilePicture || "/avatar.png"} alt={user.firstname} className="size-9 rounded-full object-cover" />
@@ -162,23 +172,25 @@ const Sidebar = () => {
                 <div className="text-sm font-medium truncate">{user.firstname}</div>
                 <div className="text-xs text-base-content/50 truncate">@{user.username}</div>
               </div>
-              <button onClick={() => acceptFriendRequest(user._id)} className="btn btn-xs btn-primary" aria-label="Accept request">
-                <Check className="size-3" />
-              </button>
-              <button onClick={() => rejectFriendRequest(user._id)} className="btn btn-xs btn-ghost" aria-label="Reject request">
-                <X className="size-3" />
-              </button>
+              <div className="flex flex-shrink-0 items-center gap-1">
+                <button onClick={() => acceptFriendRequest(user._id)} className="btn btn-xs btn-primary btn-square rounded-lg" aria-label="Accept request">
+                  <Check className="size-3" />
+                </button>
+                <button onClick={() => rejectFriendRequest(user._id)} className="btn btn-xs btn-ghost btn-square rounded-lg" aria-label="Reject request">
+                  <X className="size-3" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      <div className="overflow-y-auto w-full p-3 flex-1 bg-base-200/25">
+      <div className="min-h-0 w-full flex-1 overflow-y-auto py-1">
         {isUsersLoading && skeletonRows.map((_, index) => (
-          <div key={index} className="w-full p-3 flex items-center gap-3 rounded-md bg-base-100 border border-base-300 mb-2">
-            <div className="skeleton size-12 rounded-full flex-shrink-0" />
+          <div key={index} className="flex w-full items-center gap-3 p-3">
+            <div className="skeleton size-10 flex-shrink-0 rounded-full" />
             <div className="min-w-0 flex-1">
-              <div className="skeleton h-4 w-28 mb-2" />
+              <div className="skeleton mb-2 h-4 w-28" />
               <div className="skeleton h-3 w-16" />
             </div>
           </div>
@@ -188,29 +200,26 @@ const Sidebar = () => {
           <button
             key={user._id}
             onClick={() => user.friendshipStatus === "friends" || !isSearching ? setSelectedUser(user) : null}
-            className={`w-full p-3 mb-2 flex items-center gap-3 rounded-md border text-left transition-colors ${
+            className={`mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
               selectedUser?._id === user._id
-                ? "bg-primary/10 border-primary/40"
-                : "bg-base-100 border-base-300 hover:border-primary/30 hover:bg-base-100"
+                ? "bg-primary/10 text-primary"
+                : "hover:bg-base-200/50"
             }`}
           >
             <div className="relative flex-shrink-0">
               <img
                 src={user.profilePicture || "/avatar.png"}
                 alt={user.firstname}
-                className="size-12 object-cover rounded-full"
+                className="size-10 rounded-full object-cover"
               />
               {onlineUsers.includes(user._id) && (
-                <span className="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full ring-2 ring-base-100" />
+                <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-base-100" />
               )}
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="font-medium truncate leading-tight">{user.firstname}</div>
+              <div className="truncate text-sm font-medium leading-tight text-base-content">{user.firstname}</div>
               <div className="text-xs text-base-content/50 truncate">@{user.username || "not-set"}</div>
-              {!isSearching && (
-                <div className="text-xs text-base-content/40">{onlineUsers.includes(user._id) ? "Online" : "Offline"}</div>
-              )}
             </div>
 
             {renderUserAction(user)}
@@ -218,8 +227,8 @@ const Sidebar = () => {
         ))}
 
         {!isUsersLoading && filteredUsers.length === 0 && (
-          <div className="rounded-md border border-dashed border-base-300 bg-base-100 p-6 text-center text-sm text-base-content/60">
-            <UserPlus className="size-8 mx-auto mb-3 text-primary" />
+          <div className="p-6 text-center text-sm text-base-content/60">
+            <UserPlus className="size-8 mx-auto mb-3 text-base-content/30" />
             <div className="font-medium text-base-content">
               {isSearching ? "No users found" : "No friends yet"}
             </div>
