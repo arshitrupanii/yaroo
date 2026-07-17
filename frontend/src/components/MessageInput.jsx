@@ -9,7 +9,8 @@ const MessageInput = () => {
   const [btnLoading, setbtnLoading] = useState(false);
   const fileInputRef = useRef(null);
   const textInputRef = useRef(null);
-  const { sendMessage } = useChatStore();
+  const typingTimerRef = useRef(null);
+  const { emitStopTyping, emitTyping, sendMessage } = useChatStore();
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -23,6 +24,16 @@ const MessageInput = () => {
       setImagePreview(reader.result);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+    emitTyping();
+
+    clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      emitStopTyping();
+    }, 900);
   };
 
   const removeImage = () => {
@@ -45,6 +56,7 @@ const MessageInput = () => {
       setbtnLoading(false);
 
       setText("");
+      emitStopTyping();
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       
@@ -62,7 +74,7 @@ const MessageInput = () => {
   };
 
   return (
-    <div className="p-2 sm:p-3 md:p-4 w-full flex-shrink-0 bg-base-100 border-t border-base-300 sticky bottom-0 z-10">
+    <div className="p-3 w-full flex-shrink-0 bg-base-100 border-t border-base-300 sticky bottom-0 z-10 shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -85,16 +97,16 @@ const MessageInput = () => {
 
       <form
         onSubmit={handleSendMessage}
-        className="flex items-center gap-2 sm:gap-2 md:gap-3"
+        className="flex items-center gap-2"
       >
-        <div className="flex-1 flex gap-2 sm:gap-2 md:gap-3 min-w-0">
+        <div className="flex-1 flex gap-2 min-w-0">
           <input
             ref={textInputRef}
             type="text"
-            className="w-full input input-bordered rounded-lg text-sm sm:text-base py-2 sm:py-3 min-h-[44px] sm:min-h-[48px]"
+            className="w-full input input-bordered rounded-md text-sm min-h-11 bg-base-200/60 focus:bg-base-100"
             placeholder="Type a message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
           />
           <input
             type="file"
@@ -106,7 +118,7 @@ const MessageInput = () => {
 
           <button
             type="button"
-            className={`flex btn btn-circle min-h-[44px] sm:min-h-[48px] w-11 sm:w-12
+            className={`flex btn btn-ghost btn-circle min-h-11 w-11
                      ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
             onClick={() => fileInputRef.current?.click()}
             aria-label="Attach image"
@@ -120,7 +132,7 @@ const MessageInput = () => {
         ) : (
           <button
             type="submit"
-            className="btn btn-circle min-h-[44px] sm:min-h-[48px] w-11 sm:w-12 flex-shrink-0"
+            className="btn btn-primary btn-circle min-h-11 w-11 flex-shrink-0"
             disabled={!text.trim() && !imagePreview}
           >
             <Send className="w-4 h-4 sm:w-5 sm:h-5" />

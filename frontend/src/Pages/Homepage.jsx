@@ -9,9 +9,9 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-base-200">
-      <div className="flex items-center justify-center pt-1 sm:pt-2 md:pt-4 lg:pt-6 xl:pt-10 px-1 sm:px-2 md:px-4">
-        <div className="bg-base-100 rounded-lg shadow-cl w-full max-w-7xl h-[calc(100vh-0.5rem)] sm:h-[calc(100vh-1rem)] md:h-[calc(100vh-2rem)] lg:h-[calc(100vh-4rem)] xl:h-[calc(100vh-8rem)]">
-          <div className="flex h-full rounded-lg overflow-hidden">
+      <div className="flex items-center justify-center px-0 sm:px-3 md:px-5 py-0 sm:py-3 md:py-5">
+        <div className="bg-base-100 border border-base-300 shadow-xl w-full max-w-7xl h-[calc(100vh-4rem)] sm:h-[calc(100vh-6rem)] rounded-none sm:rounded-lg overflow-hidden">
+          <div className="flex h-full">
             {/* Sidebar - hidden on mobile when chat is selected, always visible on desktop */}
             <div className={`${selectedUser ? 'hidden lg:block' : 'block w-full'} lg:w-auto lg:flex-shrink-0`}>
               <Sidebar />

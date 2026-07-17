@@ -2,25 +2,57 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from "path";
 
 import authRoutes from './routes/auth.routes.js';
 import messageRoutes from './routes/message.routes.js';
+import friendRoutes from './routes/friend.routes.js';
 import { connectDB } from './lib/db.js';
 import { app, server } from "./lib/socket.js";
+import { requestIdMiddleware } from './middleware/requestId.middleware.js';
+import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
+import { ApiError } from './lib/ApiError.js';
+import { corsOptions } from './lib/cors.js';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 const __dirname = path.resolve();
 
+const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
+
+if (process.env.NODE_ENV === "production" && process.env.JWT_SECRET.length < 32) {
+  throw new Error('JWT_SECRET must be at least 32 characters in production');
+}
+
+app.set('trust proxy', 1);
+
+app.use(requestIdMiddleware);
+
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next) => {
+    next(new ApiError(429, 'Too many requests. Please try again later', { code: 'RATE_LIMITED' }));
+  }
+});
 
 if (process.env.NODE_ENV !== "production") {
-  app.use(cors({
-    origin: [process.env.FRONTEND_URL],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
-  }));
+  app.use(cors(corsOptions));
 }
 
 
@@ -28,14 +60,17 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
 
+app.use('/api', apiLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/friends', friendRoutes);
 
 app.get('/health', async (req, res) => {
-  res.send('API is running...');
+  res.status(200).json({ status: 'ok', requestId: req.requestId });
 });
 
+app.use('/api', notFoundHandler);
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "/frontend/dist")));
@@ -44,6 +79,9 @@ if (process.env.NODE_ENV === "production") {
     res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
   });
 }
+
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 async function startServer() {
   try {
@@ -60,3 +98,12 @@ async function startServer() {
 }
 
 startServer();
+
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled promise rejection', error);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception', error);
+  process.exit(1);
+});

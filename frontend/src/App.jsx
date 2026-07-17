@@ -7,6 +7,8 @@ import Profile from './Pages/Profile'
 import LoginPage from './Pages/LoginPage'
 import Signup from './Pages/Signup'
 import SettingPage from './Pages/SettingPage'
+import ForgotPassword from './Pages/ForgotPassword'
+import ResetPassword from './Pages/ResetPassword'
 
 import { Loader } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
@@ -35,10 +37,34 @@ function App() {
         <Route path="/" element={authUser ? <Homepage /> : <Navigate to="/login" />} />
         <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
         <Route path="/signup" element={!authUser ? <Signup /> : <Navigate to="/" />} />
+        <Route path="/forgot-password" element={!authUser ? <ForgotPassword /> : <Navigate to="/" />} />
+        <Route path="/reset-password/:token" element={!authUser ? <ResetPassword /> : <Navigate to="/" />} />
         <Route path="/profile" element={authUser ? <Profile /> : <Navigate to="/login" />} />
         <Route path="/setting" element={ <SettingPage /> } />
       </Routes>
-      <Toaster />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            borderRadius: "8px",
+            background: "hsl(var(--b1))",
+            color: "hsl(var(--bc))",
+            border: "1px solid hsl(var(--b3))",
+            boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+          },
+          error: {
+            style: {
+              border: "1px solid hsl(var(--er) / 0.35)",
+            },
+          },
+          success: {
+            style: {
+              border: "1px solid hsl(var(--su) / 0.35)",
+            },
+          },
+        }}
+      />
     </div>
   )
 }

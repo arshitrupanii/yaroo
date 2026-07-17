@@ -1,7 +1,13 @@
 import jwt from 'jsonwebtoken';
 
+const jwtOptions = {
+    expiresIn: '7d',
+    issuer: 'yaroo-api',
+    audience: 'yaroo-client'
+};
+
 export const generateToken = (userId, res) => {
-    const token = jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId }, process.env.JWT_SECRET, jwtOptions);
 
     res.cookie('ChatAppToken', token, {
         httpOnly: true,
@@ -9,4 +15,9 @@ export const generateToken = (userId, res) => {
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000
     })
+};
+
+export const verifyTokenOptions = {
+    issuer: jwtOptions.issuer,
+    audience: jwtOptions.audience
 };
