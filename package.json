@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon backend/server.js ",
     "start": "node backend/server.js",
+    "seed": "node backend/scripts/seedSampleData.js",
     "build": "npm install && npm install --prefix frontend --include=dev && npm run build --prefix frontend"
   },
   "keywords": [],
@@ -19,9 +20,12 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.6.0",
     "express-validator": "^7.3.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.5",
+    "nodemailer": "^9.0.3",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {

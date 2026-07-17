@@ -1,25 +1,16 @@
-import { MessageSquare } from "lucide-react";
+import { MessageCircleHeart } from "lucide-react";
 
 const NoChatSelected = () => {
   return (
-    <div className="w-full flex flex-1 flex-col items-center justify-center p-16 bg-base-100/50">
-      <div className="max-w-md text-center space-y-6">
-        {/* Icon Display */}
-        <div className="flex justify-center gap-4 mb-4">
-          <div className="relative">
-            <div
-              className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center
-             justify-center animate-bounce"
-            >
-              <MessageSquare className="w-8 h-8 text-primary " />
-            </div>
-          </div>
+    <div className="flex w-full flex-1 flex-col items-center justify-center bg-base-100 p-8">
+      <div className="max-w-xs space-y-3 text-center">
+        <div className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <MessageCircleHeart className="size-6" />
         </div>
 
-        {/* Welcome Text */}
-        <h2 className="text-2xl font-bold">Welcome to Chatty!</h2>
-        <p className="text-base-content/60">
-          Select a conversation from the sidebar to start chatting
+        <h2 className="text-lg font-semibold">Welcome to Yaroo</h2>
+        <p className="text-sm text-base-content/60">
+          Select a friend to chat, or search usernames to grow your contact list.
         </p>
       </div>
     </div>

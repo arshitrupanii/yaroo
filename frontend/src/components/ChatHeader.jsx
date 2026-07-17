@@ -1,47 +1,50 @@
-import { X, ArrowLeft } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useAuthStore } from "../store/useAuhstore";
 import { useChatStore } from "../store/useChatstore";
 
 const ChatHeader = () => {
-  const { selectedUser, setSelectedUser } = useChatStore();
+  const { selectedUser, setSelectedUser, typingUsers } = useChatStore();
   const { onlineUsers } = useAuthStore();
+  const isTyping = typingUsers[selectedUser._id];
 
   return (
-    <div className="p-2 sm:p-2.5 md:p-3 border-b border-base-300 flex-shrink-0">
+    <div className="flex-shrink-0 border-b border-base-300/70 bg-base-100 px-3 py-2">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 min-w-0 flex-1">
-          {/* Back button - visible on mobile only */}
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <button
             onClick={() => setSelectedUser(null)}
-            className="lg:hidden p-1 sm:p-1.5 hover:bg-base-200 rounded-full transition-colors flex-shrink-0"
+            className="btn btn-ghost btn-sm btn-square flex-shrink-0 rounded-xl lg:hidden"
             aria-label="Back to contacts"
           >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            <ArrowLeft className="size-4" />
           </button>
 
-          {/* Avatar */}
           <div className="avatar flex-shrink-0">
-            <div className="size-7 sm:size-8 md:size-9 lg:size-10 rounded-full relative">
-              <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.firstname} className="w-full h-full object-cover rounded-full" />
+            <div className="relative size-9 rounded-full">
+              <img src={selectedUser.profilePicture || "/avatar.png"} alt={selectedUser.firstname} className="h-full w-full rounded-full object-cover" />
+              <span
+                className={`absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-base-100 ${
+                  onlineUsers.includes(selectedUser._id) ? "bg-emerald-500" : "bg-base-content/25"
+                }`}
+              />
             </div>
           </div>
 
-          {/* User info */}
           <div className="min-w-0 flex-1">
-            <h3 className="font-medium text-sm sm:text-base truncate">{selectedUser.firstname}</h3>
-            <p className="text-xs sm:text-sm text-base-content/70">
-              {onlineUsers.includes(selectedUser._id) ? "Online" : "Offline"}
+            <h3 className="truncate text-sm font-semibold leading-tight">{selectedUser.firstname}</h3>
+            <p className="text-xs text-base-content/60 truncate">
+              {isTyping ? "Typing..." : onlineUsers.includes(selectedUser._id) ? "Online" : "Offline"}
+              {selectedUser.username ? ` • @${selectedUser.username}` : ""}
             </p>
           </div>
         </div>
 
-        {/* Close button - hidden on mobile, visible on desktop */}
         <button
           onClick={() => setSelectedUser(null)}
-          className="hidden lg:block p-1.5 hover:bg-base-200 rounded-full transition-colors flex-shrink-0"
+          className="hidden lg:flex btn btn-ghost btn-sm btn-square flex-shrink-0 rounded-xl"
           aria-label="Close chat"
         >
-          <X className="w-5 h-5" />
+          <X className="size-4" />
         </button>
       </div>
     </div>

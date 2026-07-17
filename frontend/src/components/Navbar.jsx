@@ -1,53 +1,38 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuhstore";
-import { LogOut, MessageSquare, Settings, User } from "lucide-react";
+import { LogOut, MessageCircle, Settings2, UserRound } from "lucide-react";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
 
   return (
-    <header
-      className="bg-base-100 border-b border-base-300 w-full z-40 
-    backdrop-blur-lg bg-base-100/80"
-    >
-      <div className="container mx-auto px-4 h-16">
-        <div className="flex items-center justify-between h-full flex-1">
-          <div className="flex items-center gap-8 flex-1">
-            <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-all">
-              <div className="size-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-primary" />
-              </div>
-              <h1 className="text-lg font-bold ">Yaroo👋</h1>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2 flex-1 justify-end">
-            <Link
-              to={"/setting"}
-              className={`
-              btn btn-sm gap-2 transition-colors
-              `}
-            >
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Settings</span>
-            </Link>
-
-            {authUser && (
-              <>
-                <Link to={"/profile"} className={`btn btn-sm gap-2`}>
-                  <User className="size-5" />
-                  <span className="hidden sm:inline">Profile</span>
-                </Link>
-
-                <button className="flex gap-2 items-center" onClick={logout}>
-                  <LogOut className="size-5" />
-                  <span className="hidden sm:inline">Logout</span>
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+    <header className="navbar h-14 min-h-14 border-b border-base-300/70 bg-base-100/95 px-3 backdrop-blur sm:px-4">
+      <div className="navbar-start min-w-0">
+        <Link to="/" className="group flex min-w-0 items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-content shadow-sm transition-transform group-hover:scale-105">
+            <MessageCircle className="size-4" strokeWidth={2.4} />
+          </span>
+          <span className="truncate text-base font-semibold tracking-tight">Yaroo</span>
+        </Link>
       </div>
+
+      <nav className="navbar-end gap-1">
+        <Link to="/setting" className="btn btn-ghost btn-sm btn-square rounded-xl" aria-label="Settings" title="Settings">
+          <Settings2 className="size-4" strokeWidth={2.2} />
+        </Link>
+
+        {authUser && (
+          <>
+            <Link to="/profile" className="btn btn-ghost btn-sm btn-square rounded-xl" aria-label="Profile" title="Profile">
+              <UserRound className="size-4" strokeWidth={2.2} />
+            </Link>
+
+            <button className="btn btn-ghost btn-sm btn-square rounded-xl" onClick={logout} aria-label="Logout" title="Logout">
+              <LogOut className="size-4" strokeWidth={2.2} />
+            </button>
+          </>
+        )}
+      </nav>
     </header>
   );
 };

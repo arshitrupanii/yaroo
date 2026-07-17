@@ -14,10 +14,18 @@ import { Link } from "react-router-dom";
 // import AuthImagePattern from "../components/AuthImagePattern";
 import toast from "react-hot-toast";
 
+const isStrongPassword = (password) => (
+  password.length >= 8 &&
+  /[a-z]/.test(password) &&
+  /[A-Z]/.test(password) &&
+  /\d/.test(password)
+);
+
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstname: "",
+    username: "",
     email: "",
     password: "",
   });
@@ -26,12 +34,14 @@ const SignUpPage = () => {
 
   const validateForm = () => {
     if (!formData.firstname.trim()) return toast.error("Full name is required");
+    if (!/^[a-zA-Z0-9_]{3,24}$/.test(formData.username.trim()))
+      return toast.error("Username must be 3-24 letters, numbers, or underscore");
     if (!formData.email.trim()) return toast.error("Email is required");
     if (!/\S+@\S+\.\S+/.test(formData.email))
       return toast.error("Invalid email format");
     if (!formData.password) return toast.error("Password is required");
-    if (formData.password.length < 6)
-      return toast.error("Password must be at least 6 characters");
+    if (!isStrongPassword(formData.password))
+      return toast.error("Password must be at least 8 characters and include uppercase, lowercase, and a number");
 
     return true;
   };
@@ -43,18 +53,18 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="min-h-screen pt-[5%]">
+    <div className="min-h-[calc(100vh-3.5rem)] bg-base-100 flex items-center justify-center px-4 py-8">
       {/* left side */}
-      <div className="flex flex-col justify-center items-center p-6 sm:p-12">
-        <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md p-2 sm:p-4">
+        <div className="w-full space-y-7">
           {/* LOGO */}
           <div className="text-center mb-8">
             <div className="flex flex-col items-center gap-2 group">
               <div
-                className="size-12 rounded-xl bg-primary/10 flex items-center justify-center 
+                className="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center 
               group-hover:bg-primary/20 transition-colors"
               >
-                <MessageSquare className="size-6 text-primary" />
+                <MessageSquare className="size-6" />
               </div>
               <h1 className="text-2xl font-bold mt-2">Create Account</h1>
               <p className="text-base-content/60">
@@ -99,6 +109,26 @@ const SignUpPage = () => {
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-medium">Username</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="size-5 text-base-content/40" />
+                </div>
+                <input
+                  type="text"
+                  className="input input-bordered w-full pl-10"
+                  placeholder="john_doe"
+                  value={formData.username}
+                  onChange={(e) =>
+                    setFormData({ ...formData, username: e.target.value.toLowerCase() })
                   }
                 />
               </div>
