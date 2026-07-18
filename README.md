@@ -1,145 +1,108 @@
-# Yaroo - Real-time Chat Application
+# Yaroo
 
-A modern, full-stack chat application built with Node.js, React, and WebSockets.
+Yaroo is a full-stack real-time chat app built with Express, MongoDB, Socket.IO, React, Vite, Tailwind CSS, DaisyUI, and Zustand.
 
 ## Quick Start
 
-### Prerequisites
-
-- Node.js (v16+)
-- npm
-
-### Installation
+Install dependencies from the project root:
 
 ```bash
-# Backend
-cd backend
 npm install
-
-# Frontend
-cd frontend
-npm install
+npm install --prefix frontend
 ```
 
-### Setup Environment Variables
+Create a local `.env` from `.env.example`, then fill the required values:
 
-**Backend** - Create `backend/.env`:
-
+```bash
+cp .env.example .env
 ```
+
+Run the app in two terminals:
+
+```bash
+npm run dev
+```
+
+```bash
+npm run dev --prefix frontend
+```
+
+Local URLs:
+
+- Frontend: `http://localhost:5173`
+- Backend health: `http://localhost:5000/health`
+- Backend API: `http://localhost:5000/api`
+
+## Required Local Config
+
+Minimum backend variables:
+
+```env
+MONGODB_URI=mongodb://localhost:27017/yaroo
 PORT=5000
-MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-CLOUDINARY_CLOUD_NAME=your_cloudinary_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
+JWT_SECRET=replace-with-a-random-32-plus-character-secret
+FRONTEND_URL=http://localhost:5173
+PASSWORD_RESET_URL=http://localhost:5173
 ```
 
-**Frontend** - Create `frontend/.env.local`:
+Frontend variables for local development:
 
-```
+```env
 VITE_API_URL=http://localhost:5000/api
+VITE_BACKEND_URL=http://localhost:5000
 ```
 
-### Run Development
+## Email Setup
+
+Resend is the recommended production email provider:
+
+```env
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=your_resend_api_key
+EMAIL_FROM="Yaroo <noreply@yourdomain.com>"
+```
+
+Do not commit API keys. If a key is shared publicly or pasted into chat, revoke it and create a new one.
+
+## Production
+
+Read [PRODUCTION.md](./PRODUCTION.md) before deploying.
+
+Production build:
 
 ```bash
-# Backend (from backend/)
-npm run dev
-
-# Frontend (from frontend/)
-npm run dev
-```
-
-## Tech Stack
-
-**Backend:** Node.js, Express, MongoDB, JWT, Socket.io, Cloudinary  
-**Frontend:** React, Vite, Tailwind CSS, Zustand, Axios
-
-## Project Structure
-
-```
-yaroo/
-├── backend/
-│   ├── controllers/      # Route handlers
-│   ├── models/           # Database schemas
-│   ├── routes/           # API endpoints
-│   ├── middleware/       # Auth & other middleware
-│   ├── lib/              # Utilities (DB, Socket, Cloudinary)
-│   └── server.js         # Entry point
-├── frontend/
-│   ├── src/
-│   │   ├── components/   # React components
-│   │   ├── Pages/        # Page components
-│   │   ├── store/        # Zustand stores
-│   │   ├── lib/          # Utilities & API client
-│   │   └── main.jsx      # Entry point
-│   └── vite.config.js
-└── package.json
-```
-
-## Build
-
-```bash
-# Frontend production build (from frontend/)
 npm run build
 ```
 
-## Running (development)
-
-Start backend and frontend in separate terminals:
+Production start:
 
 ```bash
-# terminal 1
-cd backend
-npm run dev
-
-# terminal 2
-cd frontend
 npm start
 ```
 
-Visit the frontend (typically http://localhost:3000) which calls the backend API (http://localhost:4000/api).
+## Useful Scripts
 
-## Building for production
+- `npm run dev` - start backend with nodemon
+- `npm start` - start backend with Node
+- `npm run seed` - seed sample data
+- `npm run build` - install frontend dependencies and build frontend
+- `npm run lint --prefix frontend` - lint frontend
+- `npm run build --prefix frontend` - build frontend only
 
-Build frontend and serve static files from backend or a CDN.
+## Project Structure
 
-```bash
-cd frontend
-npm run build
-
-# copy build output to backend public/ or configure hosting
+```text
+backend/
+  controllers/
+  lib/
+  middleware/
+  model/
+  routes/
+  scripts/
+frontend/
+  src/
+    components/
+    Pages/
+    lib/
+    store/
 ```
-
-## Testing
-
-Run unit and integration tests (commands depend on project):
-
-```bash
-cd backend
-npm test
-
-cd ../frontend
-npm test
-```
-
-## API (overview)
-
-Common endpoints (example):
-
-- POST /api/auth/register - register new user
-- POST /api/auth/login - authenticate and return JWT
-- GET /api/items - list items
-- POST /api/items - create item (auth required)
-
-Document the real API endpoints, request/response shapes, and auth behavior in this section.
-
-## Contributing
-
-- Fork the repository
-- Create a branch: git checkout -b feature/your-feature
-- Commit changes and open a pull request
-
----
-
-If you provide specific backend and frontend frameworks or package.json scripts, this README can be updated to include exact commands and configuration snippets.
