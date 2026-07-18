@@ -9,7 +9,7 @@ import path from "path";
 import authRoutes from './routes/auth.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import friendRoutes from './routes/friend.routes.js';
-import { connectDB } from './lib/db.js';
+import { connectDB, disconnectDB, getDbHealth } from './lib/db.js';
 import { app, server } from "./lib/socket.js";
 import { requestIdMiddleware } from './middleware/requestId.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
@@ -56,7 +56,14 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/friends', friendRoutes);
 
 app.get('/health', async (req, res) => {
-  res.status(200).json({ status: 'ok', requestId: req.requestId });
+  const database = getDbHealth();
+  const healthy = database.status === "connected";
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'ok' : 'degraded',
+    database,
+    requestId: req.requestId
+  });
 });
 
 app.use('/api', notFoundHandler);
@@ -92,6 +99,29 @@ async function startServer() {
 }
 
 startServer();
+
+const shutdown = async (signal) => {
+  console.log(`${signal} received. Closing server...`);
+
+  server.close(async () => {
+    try {
+      await disconnectDB();
+      console.log("Server closed");
+      process.exit(0);
+    } catch (error) {
+      console.error(`Shutdown failed: ${error.message}`);
+      process.exit(1);
+    }
+  });
+
+  setTimeout(() => {
+    console.error("Forced shutdown after timeout");
+    process.exit(1);
+  }, 10000).unref();
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 process.on('unhandledRejection', (error) => {
   console.error(`Unhandled promise rejection: ${error.message}`);
