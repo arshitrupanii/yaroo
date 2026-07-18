@@ -13,6 +13,40 @@ const assertFriends = async (userId, otherUserId) => {
     }
 };
 
+const emitMessageWithDeliveryAck = (message) => {
+    const receiverSocketIds = getReceiverSocketId(message.receiverId.toString());
+    if (receiverSocketIds.length === 0) return;
+
+    io.to(receiverSocketIds).timeout(5000).emit("newMessage", message, async (error, responses = []) => {
+        const delivered = responses.some((response) => response?.received === true);
+
+        if (!delivered) {
+            if (error) console.warn(`Message ${message._id} was not acknowledged by receiver sockets`);
+            return;
+        }
+
+        try {
+            const deliveredMessage = await Message.findOneAndUpdate(
+                { _id: message._id, status: 'sent' },
+                { status: 'delivered' },
+                { new: true }
+            );
+
+            if (!deliveredMessage) return;
+
+            const senderSocketIds = getReceiverSocketId(message.senderId.toString());
+            const latestReceiverSocketIds = getReceiverSocketId(message.receiverId.toString());
+            const notifySocketIds = [...new Set([...senderSocketIds, ...latestReceiverSocketIds])];
+
+            if (notifySocketIds.length > 0) {
+                io.to(notifySocketIds).emit("messageUpdated", deliveredMessage);
+            }
+        } catch (deliveryError) {
+            console.error(`Failed to update delivery status for ${message._id}: ${deliveryError.message}`);
+        }
+    });
+};
+
 export const getUserFromSidebar = async (req, res) => {
     const loggedInUserId = req.user._id;
     const currentUser = await User.findById(loggedInUserId)
@@ -86,9 +120,9 @@ export const getMessage = async (req, res) => {
     );
 
     if (seenUpdate.modifiedCount > 0) {
-        const senderSocketId = getReceiverSocketId(userToChatid);
-        if (senderSocketId) {
-            io.to(senderSocketId).emit("messagesSeen", { by: myId, conversationId: userToChatid });
+        const senderSocketIds = getReceiverSocketId(userToChatid);
+        if (senderSocketIds.length > 0) {
+            io.to(senderSocketIds).emit("messagesSeen", { by: myId, conversationId: userToChatid });
         }
     }
 
@@ -120,18 +154,15 @@ export const sendMessage = async (req, res) => {
         imageUrl = uploadResponse.secure_url;
     }
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
     const newMessage = await Message.create({
         senderId,
         receiverId,
         text,
         image: imageUrl,
-        status: receiverSocketId ? 'delivered' : 'sent'
+        status: 'sent'
     });
 
-    if (receiverSocketId) {
-        io.to(receiverSocketId).emit("newMessage", newMessage);
-    }
+    emitMessageWithDeliveryAck(newMessage);
 
     return res.status(201).json(newMessage);
 };
@@ -155,9 +186,9 @@ export const editMessage = async (req, res) => {
     message.editedAt = new Date();
     await message.save();
 
-    const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
-    if (receiverSocketId) {
-        io.to(receiverSocketId).emit("messageUpdated", message);
+    const receiverSocketIds = getReceiverSocketId(message.receiverId.toString());
+    if (receiverSocketIds.length > 0) {
+        io.to(receiverSocketIds).emit("messageUpdated", message);
     }
 
     return res.status(200).json(message);
@@ -181,9 +212,9 @@ export const deleteMessage = async (req, res) => {
         message.text = '';
         message.image = '';
 
-        const receiverSocketId = getReceiverSocketId(message.receiverId.toString());
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit("messageDeleted", { _id: message._id });
+        const receiverSocketIds = getReceiverSocketId(message.receiverId.toString());
+        if (receiverSocketIds.length > 0) {
+            io.to(receiverSocketIds).emit("messageDeleted", { _id: message._id });
         }
     } else {
         message.deletedFor.addToSet(userId);

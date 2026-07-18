@@ -3,6 +3,8 @@ import { useChatStore } from "../store/useChatstore";
 import { ImagePlus, Loader, SendHorizontal, X } from "lucide-react";
 import toast from "react-hot-toast";
 
+const MAX_IMAGE_SIZE_MB = 5;
+
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
@@ -18,6 +20,13 @@ const MessageInput = () => {
 
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+      toast.error(`Image must be smaller than ${MAX_IMAGE_SIZE_MB}MB`);
+      e.target.value = "";
       return;
     }
 
@@ -55,8 +64,6 @@ const MessageInput = () => {
         image: imagePreview,
       });
 
-      setbtnLoading(false);
-
       setText("");
       emitStopTyping();
       setImagePreview(null);
@@ -72,11 +79,13 @@ const MessageInput = () => {
       setTimeout(() => {
         textInputRef.current?.focus();
       }, 100);
+    } finally {
+      setbtnLoading(false);
     }
   };
 
   return (
-    <div className="sticky bottom-0 z-10 w-full flex-shrink-0 border-t border-base-300/70 bg-base-100 p-3">
+    <div className="sticky bottom-0 z-10 w-full flex-shrink-0 border-t border-base-300/70 bg-base-100/95 p-3">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -120,7 +129,7 @@ const MessageInput = () => {
           <button
             type="button"
             className={`btn btn-ghost btn-square flex min-h-11 w-11 flex-shrink-0 rounded-xl
-                     ${imagePreview ? "text-emerald-500" : "text-base-content/45"}`}
+                     ${imagePreview ? "text-success" : "text-base-content/45"}`}
             onClick={() => fileInputRef.current?.click()}
             aria-label="Attach image"
           >

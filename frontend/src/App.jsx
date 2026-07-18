@@ -24,8 +24,8 @@ function App() {
   }, [checkAuth])
 
   if(isCheckingAuth && !authUser) return(
-    <div className='flex justify-center items-center h-screen'>
-      <Loader className='animate-spin text-primary' size={50} />
+    <div data-theme={theme} className='flex h-screen items-center justify-center bg-base-100 text-base-content'>
+      <Loader className='animate-spin text-primary' size={42} />
     </div>
   )
 
@@ -47,11 +47,11 @@ function App() {
         toastOptions={{
           duration: 3000,
           style: {
-            borderRadius: "6px",
+            borderRadius: "8px",
             background: "hsl(var(--b1))",
             color: "hsl(var(--bc))",
             border: "1px solid hsl(var(--b3))",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            boxShadow: "0 10px 30px rgba(0,0,0,0.14)",
           },
           error: {
             style: {

@@ -12,8 +12,8 @@ const ensureValidUserId = (userId) => {
 };
 
 const emitFriendUpdate = (userId) => {
-    const socketId = getReceiverSocketId(userId.toString());
-    if (socketId) io.to(socketId).emit('friendUpdate');
+    const socketIds = getReceiverSocketId(userId.toString());
+    if (socketIds.length > 0) io.to(socketIds).emit('friendUpdate');
 };
 
 export const getFriendsOverview = async (req, res) => {

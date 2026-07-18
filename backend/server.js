@@ -15,23 +15,12 @@ import { requestIdMiddleware } from './middleware/requestId.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 import { ApiError } from './lib/ApiError.js';
 import { corsOptions } from './lib/cors.js';
+import { printEnvHelp, validateEnv } from './lib/env.js';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 const __dirname = path.resolve();
-
-const requiredEnvVars = ['MONGODB_URI', 'JWT_SECRET'];
-
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    throw new Error(`Missing required environment variable: ${envVar}`);
-  }
-}
-
-if (process.env.NODE_ENV === "production" && process.env.JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET must be at least 32 characters in production');
-}
 
 app.set('trust proxy', 1);
 
@@ -85,6 +74,7 @@ app.use(errorHandler);
 
 async function startServer() {
   try {
+    validateEnv();
     await connectDB();
 
     server.listen(PORT, () => {
@@ -92,7 +82,11 @@ async function startServer() {
     });
 
   } catch (err) {
-    console.error("Server failed to start", err);
+    if (err.message?.includes("environment variable") || err.message?.includes("JWT_SECRET")) {
+      printEnvHelp();
+    }
+
+    console.error(`Server failed to start: ${err.message}`);
     process.exit(1);
   }
 }
@@ -100,10 +94,10 @@ async function startServer() {
 startServer();
 
 process.on('unhandledRejection', (error) => {
-  console.error('Unhandled promise rejection', error);
+  console.error(`Unhandled promise rejection: ${error.message}`);
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught exception', error);
+  console.error(`Uncaught exception: ${error.message}`);
   process.exit(1);
 });
