@@ -231,6 +231,8 @@ const Sidebar = () => {
         {!isUsersLoading && filteredUsers.map((user) => {
           const isPinned = pinnedUserIds.includes(user._id);
           const canOpenChat = user.friendshipStatus === "friends" || !isSearching;
+          const unreadCount = user.unreadCount || 0;
+          const showUnreadBadge = !isSearching && unreadCount > 0 && selectedUser?._id !== user._id;
 
           return (
             <div
@@ -262,6 +264,16 @@ const Sidebar = () => {
                   <div className="truncate text-xs text-base-content/50">@{user.username || "not-set"}</div>
                 </div>
               </button>
+
+              {showUnreadBadge && (
+                <span
+                  className="badge badge-primary badge-sm mr-1 min-w-5 rounded-full px-1.5 text-[11px]"
+                  aria-label={`${unreadCount} unread messages`}
+                  title={`${unreadCount} unread messages`}
+                >
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
 
               {user.friendshipStatus === "friends" && !isSearching ? (
                 <button

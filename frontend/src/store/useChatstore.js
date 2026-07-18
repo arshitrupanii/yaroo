@@ -52,6 +52,14 @@ const isRequestCanceled = (error) => (
   error?.code === "ERR_CANCELED" || error?.name === "CanceledError"
 );
 
+const updateUserUnreadCount = (users, userId, updater) => (
+  users.map((user) => (
+    user._id === userId
+      ? { ...user, unreadCount: Math.max(0, updater(user.unreadCount || 0)) }
+      : user
+  ))
+);
+
 export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
@@ -168,7 +176,10 @@ export const useChatStore = create((set, get) => ({
 
     try {
       const res = await Axiosinstance.get(`/messages/${userId}`);
-      set({ messages: normalizeMessages(res.data) });
+      set({
+        messages: normalizeMessages(res.data),
+        users: updateUserUnreadCount(get().users, userId, () => 0),
+      });
 
     } catch (error) {
       console.error("error in get message : ", error);
@@ -176,6 +187,15 @@ export const useChatStore = create((set, get) => ({
 
     } finally {
       set({ isMessagesLoading: false });
+    }
+  },
+
+  markMessagesSeen: async (userId) => {
+    try {
+      await Axiosinstance.patch(`/messages/seen/${userId}`);
+      set({ users: updateUserUnreadCount(get().users, userId, () => 0) });
+    } catch (error) {
+      console.error("error in mark messages seen : ", error);
     }
   },
   
@@ -240,9 +260,18 @@ export const useChatStore = create((set, get) => ({
         ack({ received: true, messageId: newMessage._id });
       }
 
-      if (!isMessageSentFromSelectedUser) return;
+      if (!isMessageSentFromSelectedUser) {
+        set({
+          users: updateUserUnreadCount(get().users, newMessage.senderId, (count) => count + 1),
+        });
+        return;
+      }
 
-      set({ messages: upsertMessage(get().messages, newMessage) });
+      set({
+        messages: upsertMessage(get().messages, newMessage),
+        users: updateUserUnreadCount(get().users, newMessage.senderId, () => 0),
+      });
+      get().markMessagesSeen(newMessage.senderId);
     };
 
     const handleMessageUpdated = (updatedMessage) => {
@@ -259,14 +288,25 @@ export const useChatStore = create((set, get) => ({
       set({ messages: upsertMessage(get().messages, updatedMessage) });
     };
 
-    const handleMessageDeleted = ({ _id }) => {
-      set({ messages: get().messages.filter((message) => message._id !== _id) });
+    const handleMessageDeleted = ({ _id, senderId, status }) => {
+      const messageWasVisible = get().messages.some((message) => message._id === _id);
+      const selectedUserId = get().selectedUser?._id;
+      const shouldClearUnread = !messageWasVisible && status !== "seen" && senderId && senderId !== selectedUserId;
+
+      set({
+        messages: get().messages.filter((message) => message._id !== _id),
+        users: shouldClearUnread
+          ? updateUserUnreadCount(get().users, senderId, (count) => count - 1)
+          : get().users,
+      });
     };
 
-    const handleMessagesSeen = () => {
+    const handleMessagesSeen = ({ by }) => {
+      const authUserId = useAuthStore.getState().authUser?._id;
+
       set({
         messages: get().messages.map((message) => (
-          message.senderId === useAuthStore.getState().authUser?._id
+          message.senderId === authUserId && message.receiverId === by
             ? { ...message, status: "seen" }
             : message
         ))
@@ -344,5 +384,10 @@ export const useChatStore = create((set, get) => ({
 
   setUserSearchText: (userSearchText) => set({ userSearchText }),
 
-  setSelectedUser: (selectedUser) => set({ selectedUser }),
+  setSelectedUser: (selectedUser) => set({
+    selectedUser,
+    users: selectedUser
+      ? updateUserUnreadCount(get().users, selectedUser._id, () => 0)
+      : get().users,
+  }),
 }));

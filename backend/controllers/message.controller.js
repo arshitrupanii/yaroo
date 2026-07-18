@@ -47,13 +47,60 @@ const emitMessageWithDeliveryAck = (message) => {
     });
 };
 
+const markConversationMessagesSeen = async (viewerId, senderId) => {
+    const seenUpdate = await Message.updateMany(
+        {
+            senderId,
+            receiverId: viewerId,
+            status: { $ne: 'seen' },
+            deletedAt: { $exists: false },
+            deletedFor: { $ne: viewerId }
+        },
+        { status: 'seen', readAt: new Date() }
+    );
+
+    if (seenUpdate.modifiedCount > 0) {
+        const senderSocketIds = getReceiverSocketId(senderId.toString());
+        if (senderSocketIds.length > 0) {
+            io.to(senderSocketIds).emit("messagesSeen", { by: viewerId, conversationId: viewerId });
+        }
+    }
+
+    return seenUpdate.modifiedCount;
+};
+
 export const getUserFromSidebar = async (req, res) => {
     const loggedInUserId = req.user._id;
     const currentUser = await User.findById(loggedInUserId)
         .populate('friends', '_id firstname username email profilePicture')
         .select('friends');
 
-    return res.status(200).json(currentUser?.friends || []);
+    const friends = currentUser?.friends || [];
+    const friendIds = friends.map((friend) => friend._id);
+
+    const unreadCounts = await Message.aggregate([
+        {
+            $match: {
+                senderId: { $in: friendIds },
+                receiverId: loggedInUserId,
+                status: { $ne: 'seen' },
+                deletedAt: { $exists: false },
+                deletedFor: { $ne: loggedInUserId }
+            }
+        },
+        { $group: { _id: '$senderId', count: { $sum: 1 } } }
+    ]);
+
+    const unreadCountByUserId = new Map(
+        unreadCounts.map((item) => [item._id.toString(), item.count])
+    );
+
+    const friendsWithUnreadCounts = friends.map((friend) => ({
+        ...friend.toObject(),
+        unreadCount: unreadCountByUserId.get(friend._id.toString()) || 0
+    }));
+
+    return res.status(200).json(friendsWithUnreadCounts);
 };
 
 export const getSearchUser = async (req, res) => {
@@ -103,6 +150,7 @@ export const getMessage = async (req, res) => {
     await assertFriends(myId, userToChatid);
 
     const messages = await Message.find({
+        deletedAt: { $exists: false },
         deletedFor: { $ne: myId },
         $or: [
             { senderId: myId, receiverId: userToChatid },
@@ -110,23 +158,20 @@ export const getMessage = async (req, res) => {
         ]
     }).sort({ createdAt: 1 });
 
-    const seenUpdate = await Message.updateMany(
-        {
-            senderId: userToChatid,
-            receiverId: myId,
-            status: { $ne: 'seen' }
-        },
-        { status: 'seen', readAt: new Date() }
-    );
-
-    if (seenUpdate.modifiedCount > 0) {
-        const senderSocketIds = getReceiverSocketId(userToChatid);
-        if (senderSocketIds.length > 0) {
-            io.to(senderSocketIds).emit("messagesSeen", { by: myId, conversationId: userToChatid });
-        }
-    }
+    await markConversationMessagesSeen(myId, userToChatid);
 
     return res.status(200).json(messages);
+};
+
+export const markMessagesSeen = async (req, res) => {
+    const { id: userToChatid } = req.params;
+    const myId = req.user._id;
+
+    await assertFriends(myId, userToChatid);
+
+    const updatedCount = await markConversationMessagesSeen(myId, userToChatid);
+
+    return res.status(200).json({ updatedCount });
 };
 
 export const sendMessage = async (req, res) => {
@@ -214,7 +259,12 @@ export const deleteMessage = async (req, res) => {
 
         const receiverSocketIds = getReceiverSocketId(message.receiverId.toString());
         if (receiverSocketIds.length > 0) {
-            io.to(receiverSocketIds).emit("messageDeleted", { _id: message._id });
+            io.to(receiverSocketIds).emit("messageDeleted", {
+                _id: message._id,
+                senderId: message.senderId,
+                receiverId: message.receiverId,
+                status: message.status
+            });
         }
     } else {
         message.deletedFor.addToSet(userId);
