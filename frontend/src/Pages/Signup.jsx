@@ -33,23 +33,23 @@ const SignUpPage = () => {
   const { signup, isLoading } = useAuthStore();
 
   const validateForm = () => {
-    if (!formData.firstname.trim()) return toast.error("Full name is required");
+    if (!formData.firstname.trim()) return toast.error("Enter your name.");
     if (!/^[a-zA-Z0-9_]{3,24}$/.test(formData.username.trim()))
-      return toast.error("Username must be 3-24 letters, numbers, or underscore");
-    if (!formData.email.trim()) return toast.error("Email is required");
+      return toast.error("Username can use letters, numbers and underscore.");
+    if (!formData.email.trim()) return toast.error("Enter your email.");
     if (!/\S+@\S+\.\S+/.test(formData.email))
-      return toast.error("Invalid email format");
-    if (!formData.password) return toast.error("Password is required");
+      return toast.error("Enter a valid email.");
+    if (!formData.password) return toast.error("Create a password.");
     if (!isStrongPassword(formData.password))
-      return toast.error("Password must be at least 8 characters and include uppercase, lowercase, and a number");
+      return toast.error("Use 8+ chars with upper, lower and number.");
 
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const success = validateForm();
-    if (success === true) signup(formData);
+    if (success === true) await signup(formData);
   };
 
   return (

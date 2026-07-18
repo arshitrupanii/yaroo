@@ -22,13 +22,13 @@ const ResetPassword = () => {
   const { resetPassword, isLoading } = useAuthStore();
 
   const validateForm = () => {
-    if (!token) return toast.error("Reset token is missing");
-    if (!formData.password) return toast.error("Password is required");
+    if (!token) return toast.error("Reset link is invalid.");
+    if (!formData.password) return toast.error("Create a new password.");
     if (!isStrongPassword(formData.password)) {
-      return toast.error("Password must be at least 8 characters and include uppercase, lowercase, and a number");
+      return toast.error("Use 8+ chars with upper, lower and number.");
     }
     if (formData.password !== formData.confirmPassword) {
-      return toast.error("Passwords do not match");
+      return toast.error("Passwords do not match.");
     }
 
     return true;

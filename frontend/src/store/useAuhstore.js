@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { Axiosinstance, SOCKET_URL } from "../lib/axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
-import { formatApiError } from "../lib/apiError";
+import { formatAuthError } from "../lib/apiError";
 
 
 export const useAuthStore = create((set, get) => ({
@@ -34,11 +34,11 @@ export const useAuthStore = create((set, get) => ({
       const res = await Axiosinstance.post("/auth/signup", data);
 
       set({ authUser: res.data });
-      toast.success("Account created successfully");
+      toast.success("Account created");
 
       get().connectSocket();
     } catch (error) {
-      toast.error(formatApiError(error, "Signup failed"));
+      toast.error(formatAuthError(error, "signup"));
     } finally {
       set({ isLoading: false });
     }
@@ -51,11 +51,11 @@ export const useAuthStore = create((set, get) => ({
       const res = await Axiosinstance.post("/auth/login", data);
 
       set({ authUser: res.data });
-      toast.success("Logged in successfully");
+      toast.success("Welcome back");
 
       get().connectSocket();
     } catch (error) {
-      toast.error(formatApiError(error, "Login failed"));
+      toast.error(formatAuthError(error, "login"));
     } finally {
       set({ isLoading: false });
     }
@@ -66,11 +66,11 @@ export const useAuthStore = create((set, get) => ({
       await Axiosinstance.post("/auth/logout");
 
       set({ authUser: null });
-      toast.success("Logged out successfully");
+      toast.success("Signed out");
 
       get().disconnectSocket();
     } catch (error) {
-      toast.error(formatApiError(error, "Logout failed"));
+      toast.error(formatAuthError(error, "logout"));
     }
   },
 
@@ -79,10 +79,10 @@ export const useAuthStore = create((set, get) => ({
 
     try {
       const res = await Axiosinstance.post("/auth/forgot-password", { email });
-      toast.success(res.data.message);
+      toast.success("Reset link sent if the email exists");
       return res.data;
     } catch (error) {
-      toast.error(formatApiError(error, "Forgot password failed"));
+      toast.error(formatAuthError(error, "forgotPassword"));
       return null;
     } finally {
       set({ isLoading: false });
@@ -95,11 +95,11 @@ export const useAuthStore = create((set, get) => ({
     try {
       const res = await Axiosinstance.post(`/auth/reset-password/${token}`, { password });
       set({ authUser: res.data });
-      toast.success("Password reset successfully");
+      toast.success("Password updated");
       get().connectSocket();
       return true;
     } catch (error) {
-      toast.error(formatApiError(error, "Reset password failed"));
+      toast.error(formatAuthError(error, "resetPassword"));
       return false;
     } finally {
       set({ isLoading: false });
@@ -113,10 +113,10 @@ export const useAuthStore = create((set, get) => ({
       const res = await Axiosinstance.put("/auth/update-profile", data);
 
       set({ authUser: res.data });
-      toast.success("Profile updated successfully");
+      toast.success("Profile updated");
 
     } catch (error) {
-      toast.error(formatApiError(error, "Profile update failed"));
+      toast.error(formatAuthError(error, "updateProfile"));
     } finally {
       set({ isLoading: false, isUpdatingProfile: false });
     }

@@ -12,8 +12,8 @@ const ForgotPassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email.trim()) return toast.error("Email is required");
-    if (!/\S+@\S+\.\S+/.test(email)) return toast.error("Invalid email format");
+    if (!email.trim()) return toast.error("Enter your email.");
+    if (!/\S+@\S+\.\S+/.test(email)) return toast.error("Enter a valid email.");
 
     const result = await forgotPassword(email);
     if (result?.resetUrl) setResetUrl(result.resetUrl);

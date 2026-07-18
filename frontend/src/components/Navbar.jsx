@@ -65,7 +65,8 @@ const Navbar = () => {
           <label className="input input-bordered input-sm flex h-9 min-h-9 w-full max-w-xl items-center gap-2 rounded-lg bg-base-100/80 px-3 shadow-sm transition-colors focus-within:border-primary">
             <Search className="size-4 flex-shrink-0 text-base-content/45" />
             <input
-              type="search"
+              type="text"
+              autoComplete="off"
               value={userSearchText}
               onFocus={handleSearchFocus}
               onKeyDown={handleSearchKeyDown}

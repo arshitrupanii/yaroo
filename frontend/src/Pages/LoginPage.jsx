@@ -13,10 +13,10 @@ const LoginPage = () => {
   const { login, isLoading } = useAuthStore();
 
   const validateForm = () => {
-    if (!formData.email.trim()) return toast.error("Email is required");
+    if (!formData.email.trim()) return toast.error("Enter your email.");
     if (!/\S+@\S+\.\S+/.test(formData.email))
-      return toast.error("Invalid email format");
-    if (!formData.password) return toast.error("Password is required");
+      return toast.error("Enter a valid email.");
+    if (!formData.password) return toast.error("Enter your password.");
 
     return true;
   };
@@ -24,7 +24,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = validateForm();
-    if(success === true) login(formData);
+    if (success === true) await login(formData);
   };
 
   return (

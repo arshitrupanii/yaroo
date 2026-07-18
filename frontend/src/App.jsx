@@ -47,6 +47,7 @@ function App() {
         toastOptions={{
           duration: 3000,
           style: {
+            maxWidth: "360px",
             borderRadius: "8px",
             background: "hsl(var(--b1))",
             color: "hsl(var(--bc))",
