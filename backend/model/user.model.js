@@ -17,7 +17,9 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true,
+        lowercase: true
     },
     password: {
         type: String,
@@ -58,5 +60,8 @@ const userSchema = new mongoose.Schema({
 
 userSchema.index({ passwordResetToken: 1 });
 userSchema.index({ firstname: 1 });
+userSchema.index({ friends: 1 });
+userSchema.index({ friendRequestsSent: 1 });
+userSchema.index({ friendRequestsReceived: 1 });
 
 export default mongoose.model('User', userSchema);

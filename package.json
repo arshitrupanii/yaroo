@@ -7,6 +7,7 @@
     "dev": "nodemon backend/server.js ",
     "start": "node backend/server.js",
     "seed": "node backend/scripts/seedSampleData.js",
+    "db:indexes": "node backend/scripts/syncIndexes.js",
     "build": "npm install && npm install --prefix frontend --include=dev && npm run build --prefix frontend"
   },
   "keywords": [],

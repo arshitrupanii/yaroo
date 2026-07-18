@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 
 import Message from "../model/message.model.js";
 import User from "../model/user.model.js";
+import { connectDB, disconnectDB } from "../lib/db.js";
 
 dotenv.config();
 
@@ -24,7 +25,11 @@ async function seedSampleData() {
     throw new Error("Missing MONGODB_URI");
   }
 
-  await mongoose.connect(process.env.MONGODB_URI);
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DATABASE_RESET !== "true") {
+    throw new Error("Refusing to seed production database without ALLOW_DATABASE_RESET=true");
+  }
+
+  await connectDB();
 
   const hashedPassword = await bcrypt.hash(password, 12);
 
@@ -151,5 +156,5 @@ seedSampleData()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await mongoose.disconnect();
+    await disconnectDB();
   });

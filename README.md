@@ -39,6 +39,7 @@ Minimum backend variables:
 
 ```env
 MONGODB_URI=mongodb://localhost:27017/yaroo
+MONGO_AUTO_INDEX=false
 PORT=5000
 JWT_SECRET=replace-with-a-random-32-plus-character-secret
 FRONTEND_URL=http://localhost:5173
@@ -85,6 +86,7 @@ npm start
 - `npm run dev` - start backend with nodemon
 - `npm start` - start backend with Node
 - `npm run seed` - seed sample data
+- `npm run db:indexes` - sync MongoDB indexes
 - `npm run build` - install frontend dependencies and build frontend
 - `npm run lint --prefix frontend` - lint frontend
 - `npm run build --prefix frontend` - build frontend only

@@ -10,6 +10,8 @@ Set these on the backend hosting platform:
 NODE_ENV=production
 PORT=5000
 MONGODB_URI=your_mongodb_connection_string
+MONGO_AUTO_INDEX=false
+MONGO_MAX_POOL_SIZE=20
 JWT_SECRET=your_random_32_plus_character_secret
 FRONTEND_URL=https://your-app-domain.com
 PASSWORD_RESET_URL=https://your-app-domain.com
@@ -40,6 +42,8 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 - `PASSWORD_RESET_URL` must point to the live frontend domain, not localhost.
 - `FRONTEND_URL` must match the live frontend origin so cookies and CORS work correctly.
 - Use MongoDB Atlas or another managed MongoDB service with IP/network access configured for the backend host.
+- Keep `MONGO_AUTO_INDEX=false` in production. Run the index ensure command during deploy or maintenance instead.
+- Never run `npm run seed` against production unless you intentionally want to reset sample data and set `ALLOW_DATABASE_RESET=true`.
 
 ## Deploy Steps
 
@@ -52,19 +56,27 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 npm run build
 ```
 
-5. Start the backend:
+5. Ensure database indexes:
+
+```bash
+npm run db:indexes
+```
+
+6. Start the backend:
 
 ```bash
 npm start
 ```
 
-6. Check health:
+7. Check health:
 
 ```bash
 curl https://your-backend-domain.com/health
 ```
 
-7. Test these flows after deploy:
+The health response should include `"database":{"status":"connected"}`.
+
+8. Test these flows after deploy:
 
 - Signup
 - Login
