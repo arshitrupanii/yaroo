@@ -16,13 +16,28 @@ const friendlyMessages = {
   WEAK_PASSWORD: "Use 8+ characters with uppercase, lowercase, and a number.",
 };
 
+const MAX_ERROR_LENGTH = 140;
+
+const compactMessage = (message) => {
+  if (!message || typeof message !== "string") return null;
+
+  const firstLine = message.replace(/\s+/g, " ").trim();
+  if (!firstLine) return null;
+
+  return firstLine.length > MAX_ERROR_LENGTH
+    ? `${firstLine.slice(0, MAX_ERROR_LENGTH - 1)}…`
+    : firstLine;
+};
+
 export const getApiErrorMessage = (error, fallback = "Something went wrong") => {
   if (!error?.response && error?.message === "Network Error") {
     return friendlyMessages.NETWORK_ERROR;
   }
 
   const code = error?.response?.data?.code;
-  return friendlyMessages[code] || error?.response?.data?.message || error?.message || fallback;
+  const serverMessage = compactMessage(error?.response?.data?.message);
+
+  return friendlyMessages[code] || serverMessage || fallback;
 };
 
 export const getApiRequestId = (error) => {

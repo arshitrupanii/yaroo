@@ -14,11 +14,17 @@ const io = new Server(server, {
     origin: getAllowedOrigins(),
     methods: ["GET", "POST"],
     credentials: true
-  }
+  },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    skipMiddlewares: false
+  },
+  pingInterval: 25000,
+  pingTimeout: 20000
 });
 
 export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
+  return Array.from(userSocketMap[userId] || []);
 }
 
 const userSocketMap = {};
@@ -28,24 +34,30 @@ io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
 
   const userId = socket.handshake.query.userId;
-  if (userId) userSocketMap[userId] = socket.id;
+  if (userId) {
+    if (!userSocketMap[userId]) userSocketMap[userId] = new Set();
+    userSocketMap[userId].add(socket.id);
+  }
 
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
   socket.on("typing", ({ receiverId }) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) io.to(receiverSocketId).emit("typing", { senderId: userId });
+    if (receiverSocketId.length > 0) io.to(receiverSocketId).emit("typing", { senderId: userId });
   });
 
   socket.on("stopTyping", ({ receiverId }) => {
     const receiverSocketId = getReceiverSocketId(receiverId);
-    if (receiverSocketId) io.to(receiverSocketId).emit("stopTyping", { senderId: userId });
+    if (receiverSocketId.length > 0) io.to(receiverSocketId).emit("stopTyping", { senderId: userId });
   });
 
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.id);
 
-    delete userSocketMap[userId];
+    if (userId && userSocketMap[userId]) {
+      userSocketMap[userId].delete(socket.id);
+      if (userSocketMap[userId].size === 0) delete userSocketMap[userId];
+    }
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });

@@ -8,6 +8,7 @@ import { formatApiError } from "../lib/apiError";
 export const useAuthStore = create((set, get) => ({
   authUser: null,
   isLoading: false,
+  isUpdatingProfile: false,
   isCheckingAuth: true,
   onlineUsers: [],
   socket: null,
@@ -106,7 +107,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   updateProfile: async (data) => {
-    set({ isLoading: true });
+    set({ isLoading: true, isUpdatingProfile: true });
 
     try {
       const res = await Axiosinstance.put("/auth/update-profile", data);
@@ -117,7 +118,7 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       toast.error(formatApiError(error, "Profile update failed"));
     } finally {
-      set({ isLoading: false });
+      set({ isLoading: false, isUpdatingProfile: false });
     }
   },
 
@@ -131,6 +132,13 @@ export const useAuthStore = create((set, get) => ({
         query: {
           userId: authUser._id,
         },
+        autoConnect: false,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 500,
+        reconnectionDelayMax: 5000,
+        timeout: 10000,
+        transports: ["websocket", "polling"],
       });
       
       socket.connect();
@@ -150,7 +158,9 @@ export const useAuthStore = create((set, get) => ({
   },
 
   disconnectSocket: () => {
-    if (get().socket?.connected) get().socket.disconnect();
+    const socket = get().socket;
+    if (socket?.connected) socket.disconnect();
+    set({ socket: null, onlineUsers: [] });
   },
 
 }));

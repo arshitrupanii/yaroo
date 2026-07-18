@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatstore";
 import { useAuthStore } from "../store/useAuhstore.js";
-import { Check, Inbox, Search, UserPlus, UsersRound, X } from "lucide-react";
+import { Check, Inbox, Pin, PinOff, UserPlus, UsersRound, X } from "lucide-react";
+import AvatarInitials from "./AvatarInitials";
 
 const Sidebar = () => {
   const {
@@ -10,19 +11,22 @@ const Sidebar = () => {
     getFriendRequests,
     getUsers,
     isUsersLoading,
+    pinnedUserIds,
     rejectFriendRequest,
     searchUsers,
     selectedUser,
     sendFriendRequest,
     setSelectedUser,
+    setUserSearchText,
+    togglePinnedUser,
+    userSearchText,
     users,
   } = useChatStore();
 
   const { onlineUsers, socket } = useAuthStore();
-  const [showOnlineOnly, setShowOnlineOnly] = useState(false);
-  const [searchText, setSearchText] = useState("");
+  const [filterMode, setFilterMode] = useState("all");
   const hasSearchedRef = useRef(false);
-  const isSearching = searchText.trim().length > 0;
+  const isSearching = userSearchText.trim().length > 0;
 
   useEffect(() => {
     getUsers();
@@ -33,18 +37,23 @@ const Sidebar = () => {
     if (!socket) return;
 
     const refreshFriends = () => {
-      getUsers();
       getFriendRequests();
+      const nextSearch = userSearchText.trim();
+      if (nextSearch) {
+        searchUsers(nextSearch);
+      } else {
+        getUsers();
+      }
     };
 
     socket.on("friendUpdate", refreshFriends);
 
     return () => socket.off("friendUpdate", refreshFriends);
-  }, [getFriendRequests, getUsers, socket]);
+  }, [getFriendRequests, getUsers, searchUsers, socket, userSearchText]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const nextSearch = searchText.trim();
+      const nextSearch = userSearchText.trim();
 
       if (nextSearch) {
         hasSearchedRef.current = true;
@@ -56,11 +65,26 @@ const Sidebar = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchText, getUsers, searchUsers]);
+  }, [getUsers, searchUsers, userSearchText]);
 
-  const filteredUsers = showOnlineOnly && !isSearching
-    ? users.filter((user) => onlineUsers.includes(user._id))
-    : users;
+  const filteredUsers = users
+    .filter((user) => {
+      if (isSearching) return true;
+      if (filterMode === "online") return onlineUsers.includes(user._id);
+      if (filterMode === "pinned") return pinnedUserIds.includes(user._id);
+      return true;
+    })
+    .sort((a, b) => {
+      const aPinnedIndex = pinnedUserIds.indexOf(a._id);
+      const bPinnedIndex = pinnedUserIds.indexOf(b._id);
+      const aPinned = aPinnedIndex !== -1;
+      const bPinned = bPinnedIndex !== -1;
+
+      if (aPinned && bPinned) return aPinnedIndex - bPinnedIndex;
+      if (aPinned) return -1;
+      if (bPinned) return 1;
+      return a.firstname.localeCompare(b.firstname);
+    });
   const skeletonRows = Array(7).fill(null);
 
   const renderUserAction = (user) => {
@@ -101,9 +125,18 @@ const Sidebar = () => {
     );
   };
 
+  const openUserChat = (user, canOpenChat) => {
+    if (!canOpenChat) return;
+
+    setSelectedUser(user);
+    if (isSearching && user.friendshipStatus === "friends") {
+      setUserSearchText("");
+    }
+  };
+
   return (
     <aside className="flex h-full min-h-0 w-full flex-col border-r border-base-300/70 bg-base-100 lg:w-72">
-      <div className="w-full flex-shrink-0 border-b border-base-300/70 bg-base-100 p-3">
+      <div className="w-full flex-shrink-0 border-b border-base-300/70 bg-base-100/95 p-3">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 truncate text-sm font-semibold leading-tight">
@@ -116,45 +149,44 @@ const Sidebar = () => {
           )}
         </div>
 
-        <div className="relative mt-3">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-base-content/40" />
-          <input
-            type="search"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Search username"
-            className="input input-bordered input-sm w-full rounded-lg pl-9 pr-9"
-          />
-          {searchText && (
+        {isSearching ? (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-base-200/70 px-3 py-2 text-xs text-base-content/60">
+            <span className="min-w-0 truncate">
+              Results for <span className="font-medium text-base-content">{userSearchText.trim()}</span>
+            </span>
             <button
               type="button"
-              onClick={() => setSearchText("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-base-300"
+              onClick={() => setUserSearchText("")}
+              className="btn btn-ghost btn-xs btn-square h-6 min-h-6 rounded-md"
               aria-label="Clear search"
             >
-              <X className="size-4 text-base-content/50" />
+              <X className="size-3.5" />
             </button>
-          )}
-        </div>
-
-        {!isSearching && (
-          <div className="mt-3 flex items-center gap-2 text-xs">
+          </div>
+        ) : (
+          <div className="mt-3 flex items-center gap-1.5 text-xs">
             <button
               type="button"
-              onClick={() => setShowOnlineOnly(false)}
-              className={`btn btn-xs h-7 min-h-7 rounded-full px-3 ${!showOnlineOnly ? "btn-primary" : "btn-ghost text-base-content/70"}`}
+              onClick={() => setFilterMode("all")}
+              className={`btn btn-xs h-7 min-h-7 rounded-full px-3 ${filterMode === "all" ? "btn-primary" : "btn-ghost text-base-content/70"}`}
             >
               All
             </button>
-            <label className={`btn btn-xs h-7 min-h-7 rounded-full px-3 ${showOnlineOnly ? "btn-primary" : "btn-ghost text-base-content/70"}`}>
-              <input
-                type="checkbox"
-                checked={showOnlineOnly}
-                onChange={(e) => setShowOnlineOnly(e.target.checked)}
-                className="hidden"
-              />
+            <button
+              type="button"
+              onClick={() => setFilterMode("pinned")}
+              className={`btn btn-xs h-7 min-h-7 rounded-full px-3 ${filterMode === "pinned" ? "btn-primary" : "btn-ghost text-base-content/70"}`}
+            >
+              <Pin className="size-3" />
+              Pinned
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterMode("online")}
+              className={`btn btn-xs h-7 min-h-7 rounded-full px-3 ${filterMode === "online" ? "btn-primary" : "btn-ghost text-base-content/70"}`}
+            >
               Online
-            </label>
+            </button>
           </div>
         )}
       </div>
@@ -167,7 +199,7 @@ const Sidebar = () => {
           </div>
           {friendRequests.received.map((user) => (
             <div key={user._id} className="flex items-center gap-2">
-              <img src={user.profilePicture || "/avatar.png"} alt={user.firstname} className="size-9 rounded-full object-cover" />
+              <AvatarInitials user={user} alt={user.firstname} className="size-9" textClassName="text-xs" />
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-medium truncate">{user.firstname}</div>
                 <div className="text-xs text-base-content/50 truncate">@{user.username}</div>
@@ -196,44 +228,68 @@ const Sidebar = () => {
           </div>
         ))}
 
-        {!isUsersLoading && filteredUsers.map((user) => (
-          <button
-            key={user._id}
-            onClick={() => user.friendshipStatus === "friends" || !isSearching ? setSelectedUser(user) : null}
-            className={`mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
-              selectedUser?._id === user._id
-                ? "bg-primary/10 text-primary"
-                : "hover:bg-base-200/50"
-            }`}
-          >
-            <div className="relative flex-shrink-0">
-              <img
-                src={user.profilePicture || "/avatar.png"}
-                alt={user.firstname}
-                className="size-10 rounded-full object-cover"
-              />
-              {onlineUsers.includes(user._id) && (
-                <span className="absolute bottom-0 right-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-base-100" />
-              )}
-            </div>
+        {!isUsersLoading && filteredUsers.map((user) => {
+          const isPinned = pinnedUserIds.includes(user._id);
+          const canOpenChat = user.friendshipStatus === "friends" || !isSearching;
 
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium leading-tight text-base-content">{user.firstname}</div>
-              <div className="text-xs text-base-content/50 truncate">@{user.username || "not-set"}</div>
-            </div>
+          return (
+            <div
+              key={user._id}
+              className={`group mx-2 flex w-[calc(100%-1rem)] items-center gap-2 rounded-xl transition-all duration-150 ${
+                selectedUser?._id === user._id
+                  ? "bg-primary/15 text-primary shadow-sm"
+                  : "hover:bg-base-200/70"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => openUserChat(user, canOpenChat)}
+                className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left"
+              >
+                <AvatarInitials
+                  user={user}
+                  alt={user.firstname}
+                  className="size-10"
+                  showStatus
+                  isOnline={onlineUsers.includes(user._id)}
+                />
 
-            {renderUserAction(user)}
-          </button>
-        ))}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className="truncate text-sm font-medium leading-tight text-base-content">{user.firstname}</div>
+                    {isPinned && <Pin className="size-3 flex-shrink-0 fill-current text-primary" />}
+                  </div>
+                  <div className="truncate text-xs text-base-content/50">@{user.username || "not-set"}</div>
+                </div>
+              </button>
+
+              {user.friendshipStatus === "friends" && !isSearching ? (
+                <button
+                  type="button"
+                  onClick={() => togglePinnedUser(user._id)}
+                  className={`btn btn-ghost btn-xs btn-square mr-2 rounded-lg ${isPinned ? "text-primary" : "text-base-content/35 opacity-100 sm:opacity-0 sm:group-hover:opacity-100"}`}
+                  aria-label={isPinned ? `Unpin ${user.firstname}` : `Pin ${user.firstname}`}
+                  title={isPinned ? "Unpin chat" : "Pin chat"}
+                >
+                  {isPinned ? <PinOff className="size-3.5" /> : <Pin className="size-3.5" />}
+                </button>
+              ) : renderUserAction(user)}
+            </div>
+          );
+        })}
 
         {!isUsersLoading && filteredUsers.length === 0 && (
           <div className="p-6 text-center text-sm text-base-content/60">
             <UserPlus className="size-8 mx-auto mb-3 text-base-content/30" />
             <div className="font-medium text-base-content">
-              {isSearching ? "No users found" : "No friends yet"}
+              {isSearching ? "No users found" : filterMode === "pinned" ? "No pinned chats" : "No friends yet"}
             </div>
             <p className="mt-1">
-              {isSearching ? "Try another username or name." : "Search a username above and send a friend request."}
+              {isSearching
+                ? "Try another username or name."
+                : filterMode === "pinned"
+                  ? "Pin your important chats from the list."
+                  : "Search a username above and send a friend request."}
             </p>
           </div>
         )}

@@ -57,5 +57,6 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.index({ passwordResetToken: 1 });
+userSchema.index({ firstname: 1 });
 
 export default mongoose.model('User', userSchema);
