@@ -1,11 +1,20 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuhstore";
 import { useChatStore } from "../store/useChatstore";
-import { LogOut, MessageCircleMore, Search, Settings2, UserRound, X } from "lucide-react";
+import { Bell, CheckCheck, LogOut, MessageCircleMore, Search, Settings2, Trash2, UserRound, X } from "lucide-react";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
-  const { setSelectedUser, setUserSearchText, userSearchText } = useChatStore();
+  const {
+    clearNotifications,
+    markNotificationsRead,
+    notifications,
+    setSelectedUser,
+    setUserSearchText,
+    unreadNotificationCount,
+    userSearchText,
+    users,
+  } = useChatStore();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -42,9 +51,23 @@ const Navbar = () => {
     setUserSearchText("");
   };
 
+  const openNotification = (notification) => {
+    markNotificationsRead();
+
+    if (notification.type === "message" && notification.userId) {
+      const user = users.find((item) => item._id === notification.userId);
+      if (user) {
+        setSelectedUser(user);
+        setUserSearchText("");
+        if (location.pathname !== "/") navigate("/");
+      }
+    }
+  };
+
   const handleLogout = () => {
     setUserSearchText("");
     setSelectedUser(null);
+    clearNotifications();
     logout();
   };
 
@@ -90,6 +113,80 @@ const Navbar = () => {
       </div>
 
       <nav className="flex flex-shrink-0 justify-end gap-1">
+        {authUser && (
+          <div className="dropdown dropdown-end">
+            <button
+              type="button"
+              tabIndex={0}
+              className="btn btn-ghost btn-sm btn-square rounded-xl"
+              onClick={markNotificationsRead}
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <span className="indicator">
+                {unreadNotificationCount > 0 && (
+                  <span className="badge badge-primary badge-xs indicator-item px-1 text-[10px]">
+                    {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+                  </span>
+                )}
+                <Bell className="size-4" strokeWidth={2.2} />
+              </span>
+            </button>
+
+            <div
+              tabIndex={0}
+              className="dropdown-content z-50 mt-2 w-80 rounded-lg border border-base-300 bg-base-100 shadow-xl"
+            >
+              <div className="flex items-center justify-between border-b border-base-300 px-3 py-2">
+                <div className="text-sm font-semibold">Notifications</div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs btn-square rounded-md"
+                    onClick={markNotificationsRead}
+                    aria-label="Mark all as read"
+                    title="Mark all as read"
+                  >
+                    <CheckCheck className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs btn-square rounded-md"
+                    onClick={clearNotifications}
+                    aria-label="Clear notifications"
+                    title="Clear notifications"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="max-h-80 overflow-y-auto py-1">
+                {notifications.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-sm text-base-content/55">
+                    No notifications yet
+                  </div>
+                ) : (
+                  notifications.map((notification) => (
+                    <button
+                      type="button"
+                      key={notification.id}
+                      onClick={() => openNotification(notification)}
+                      className="flex w-full gap-2 px-3 py-2 text-left hover:bg-base-200/70"
+                    >
+                      <span className={`mt-1 size-2 flex-shrink-0 rounded-full ${notification.read ? "bg-base-300" : "bg-primary"}`} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{notification.title}</span>
+                        <span className="block truncate text-xs text-base-content/60">{notification.body}</span>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <Link to="/setting" className="btn btn-ghost btn-sm btn-square rounded-xl" aria-label="Settings" title="Settings">
           <Settings2 className="size-4" strokeWidth={2.2} />
         </Link>

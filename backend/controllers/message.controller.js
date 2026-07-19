@@ -6,6 +6,14 @@ import { ApiError } from '../lib/ApiError.js';
 
 const userFields = "-password -createdAt -updatedAt -friendRequestsSent -friendRequestsReceived";
 
+const toPublicUser = (user) => ({
+    _id: user._id,
+    firstname: user.firstname,
+    username: user.username,
+    email: user.email,
+    profilePicture: user.profilePicture
+});
+
 const assertFriends = async (userId, otherUserId) => {
     const user = await User.findById(userId).select('friends');
     if (!user?.friends.some((id) => id.toString() === otherUserId.toString())) {
@@ -13,11 +21,16 @@ const assertFriends = async (userId, otherUserId) => {
     }
 };
 
-const emitMessageWithDeliveryAck = (message) => {
+const emitMessageWithDeliveryAck = (message, sender) => {
     const receiverSocketIds = getReceiverSocketId(message.receiverId.toString());
     if (receiverSocketIds.length === 0) return;
 
-    io.to(receiverSocketIds).timeout(5000).emit("newMessage", message, async (error, responses = []) => {
+    const messagePayload = {
+        ...message.toObject(),
+        sender
+    };
+
+    io.to(receiverSocketIds).timeout(5000).emit("newMessage", messagePayload, async (error, responses = []) => {
         const delivered = responses.some((response) => response?.received === true);
 
         if (!delivered) {
@@ -207,7 +220,7 @@ export const sendMessage = async (req, res) => {
         status: 'sent'
     });
 
-    emitMessageWithDeliveryAck(newMessage);
+    emitMessageWithDeliveryAck(newMessage, toPublicUser(req.user));
 
     return res.status(201).json(newMessage);
 };

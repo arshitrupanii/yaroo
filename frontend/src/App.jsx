@@ -13,15 +13,25 @@ import ResetPassword from './Pages/ResetPassword'
 import { Loader } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/useAuhstore'
+import { useChatStore } from './store/useChatstore'
 import { Usethemes } from './store/useTheme'
 
 function App() {
-  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth, socket } = useAuthStore();
+  const { subscribeToMessages, unsubscribeFromMessages } = useChatStore();
   const {theme} = Usethemes()
 
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
+
+  useEffect(() => {
+    if (!authUser || !socket) return undefined;
+
+    subscribeToMessages();
+
+    return () => unsubscribeFromMessages();
+  }, [authUser, socket, subscribeToMessages, unsubscribeFromMessages]);
 
   if(isCheckingAuth && !authUser) return(
     <div data-theme={theme} className='flex h-screen items-center justify-center bg-base-100 text-base-content'>

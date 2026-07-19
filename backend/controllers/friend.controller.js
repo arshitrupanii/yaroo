@@ -5,15 +5,23 @@ import { getReceiverSocketId, io } from '../lib/socket.js';
 
 const publicFields = '_id firstname username email profilePicture';
 
+const toPublicUser = (user) => ({
+    _id: user._id,
+    firstname: user.firstname,
+    username: user.username,
+    email: user.email,
+    profilePicture: user.profilePicture
+});
+
 const ensureValidUserId = (userId) => {
     if (!mongoose.Types.ObjectId.isValid(userId)) {
         throw new ApiError(400, 'Invalid user id', { code: 'INVALID_ID' });
     }
 };
 
-const emitFriendUpdate = (userId) => {
+const emitFriendUpdate = (userId, payload = {}) => {
     const socketIds = getReceiverSocketId(userId.toString());
-    if (socketIds.length > 0) io.to(socketIds).emit('friendUpdate');
+    if (socketIds.length > 0) io.to(socketIds).emit('friendUpdate', payload);
 };
 
 export const getFriendsOverview = async (req, res) => {
@@ -57,7 +65,9 @@ export const sendFriendRequest = async (req, res) => {
         throw new ApiError(409, 'Friend request already sent', { code: 'REQUEST_ALREADY_SENT' });
     }
 
-    if (currentUser.friendRequestsReceived.some((id) => id.toString() === userId)) {
+    const acceptsExistingRequest = currentUser.friendRequestsReceived.some((id) => id.toString() === userId);
+
+    if (acceptsExistingRequest) {
         currentUser.friends.addToSet(targetUser._id);
         targetUser.friends.addToSet(currentUser._id);
         currentUser.friendRequestsReceived.pull(targetUser._id);
@@ -69,8 +79,11 @@ export const sendFriendRequest = async (req, res) => {
 
     await Promise.all([currentUser.save(), targetUser.save()]);
 
-    emitFriendUpdate(targetUser._id);
-    emitFriendUpdate(currentUser._id);
+    emitFriendUpdate(targetUser._id, acceptsExistingRequest
+        ? { type: 'friend_request_accepted', from: toPublicUser(currentUser) }
+        : { type: 'friend_request_received', from: toPublicUser(currentUser) }
+    );
+    emitFriendUpdate(currentUser._id, { type: 'friends_changed', silent: true });
 
     return res.status(200).json({ message: 'Friend request updated' });
 };
@@ -101,8 +114,8 @@ export const acceptFriendRequest = async (req, res) => {
 
     await Promise.all([currentUser.save(), requester.save()]);
 
-    emitFriendUpdate(requester._id);
-    emitFriendUpdate(currentUser._id);
+    emitFriendUpdate(requester._id, { type: 'friend_request_accepted', from: toPublicUser(currentUser) });
+    emitFriendUpdate(currentUser._id, { type: 'friends_changed', silent: true });
 
     return res.status(200).json({ message: 'Friend request accepted' });
 };
@@ -127,8 +140,8 @@ export const rejectFriendRequest = async (req, res) => {
 
     await Promise.all([currentUser.save(), requester.save()]);
 
-    emitFriendUpdate(requester._id);
-    emitFriendUpdate(currentUser._id);
+    emitFriendUpdate(requester._id, { type: 'friend_request_rejected', from: toPublicUser(currentUser) });
+    emitFriendUpdate(currentUser._id, { type: 'friends_changed', silent: true });
 
     return res.status(200).json({ message: 'Friend request rejected' });
 };
@@ -153,8 +166,8 @@ export const removeFriend = async (req, res) => {
 
     await Promise.all([currentUser.save(), friend.save()]);
 
-    emitFriendUpdate(friend._id);
-    emitFriendUpdate(currentUser._id);
+    emitFriendUpdate(friend._id, { type: 'friend_removed', from: toPublicUser(currentUser) });
+    emitFriendUpdate(currentUser._id, { type: 'friends_changed', silent: true });
 
     return res.status(200).json({ message: 'Friend removed' });
 };

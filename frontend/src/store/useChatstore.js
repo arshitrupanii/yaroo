@@ -5,6 +5,7 @@ import { useAuthStore } from "./useAuhstore";
 import { formatApiError } from "../lib/apiError";
 
 const PINNED_CHATS_KEY = "yaroo:pinned-chats";
+const MAX_NOTIFICATIONS = 20;
 
 const loadPinnedUserIds = () => {
   try {
@@ -60,9 +61,47 @@ const updateUserUnreadCount = (users, userId, updater) => (
   ))
 );
 
+const getDisplayName = (user) => user?.firstname || user?.username || "Someone";
+
+const getMessagePreview = (message) => {
+  if (message?.text?.trim()) return message.text.trim();
+  if (message?.image) return "Sent an image";
+  return "Sent a message";
+};
+
+const getFriendNotificationMessage = (payload = {}) => {
+  if (payload.silent) return null;
+  const name = getDisplayName(payload.from);
+
+  if (payload.type === "friend_request_received") {
+    return `${name} sent you a friend request`;
+  }
+
+  if (payload.type === "friend_request_accepted") {
+    return `${name} accepted your request`;
+  }
+
+  if (payload.type === "friend_request_rejected") {
+    return `${name} declined your request`;
+  }
+
+  if (payload.type === "friend_removed") {
+    return `${name} removed you from friends`;
+  }
+
+  return null;
+};
+
+const addNotificationToList = (notifications, notification) => {
+  const withoutDuplicate = notifications.filter((item) => item.id !== notification.id);
+  return [notification, ...withoutDuplicate].slice(0, MAX_NOTIFICATIONS);
+};
+
 export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
+  notifications: [],
+  unreadNotificationCount: 0,
   friendRequests: { friends: [], sent: [], received: [] },
   selectedUser: null,
   pinnedUserIds: loadPinnedUserIds(),
@@ -261,8 +300,27 @@ export const useChatStore = create((set, get) => ({
       }
 
       if (!isMessageSentFromSelectedUser) {
-        set({
-          users: updateUserUnreadCount(get().users, newMessage.senderId, (count) => count + 1),
+        const sender = newMessage.sender || get().users.find((user) => user._id === newMessage.senderId);
+        const notification = {
+          id: `message-${newMessage._id}`,
+          type: "message",
+          title: getDisplayName(sender),
+          body: getMessagePreview(newMessage),
+          userId: newMessage.senderId,
+          createdAt: newMessage.createdAt || new Date().toISOString(),
+          read: false,
+        };
+
+        set((state) => ({
+          users: updateUserUnreadCount(state.users, newMessage.senderId, (count) => count + 1),
+          notifications: addNotificationToList(state.notifications, notification),
+          unreadNotificationCount: state.notifications.some((item) => item.id === notification.id && !item.read)
+            ? state.unreadNotificationCount
+            : state.unreadNotificationCount + 1,
+        }));
+
+        toast(`${getDisplayName(sender)}: ${getMessagePreview(newMessage)}`, {
+          id: `message-${newMessage._id}`,
         });
         return;
       }
@@ -323,9 +381,34 @@ export const useChatStore = create((set, get) => ({
       set({ typingUsers: nextTypingUsers });
     };
 
-    const handleFriendUpdate = () => {
-      get().getFriendRequests();
-      get().getUsers();
+    const handleFriendUpdate = async (payload = {}) => {
+      const message = getFriendNotificationMessage(payload);
+      if (message) {
+        const notification = {
+          id: `${payload.type}-${payload.from?._id || Date.now()}`,
+          type: "friend",
+          title: "Friends",
+          body: message,
+          createdAt: new Date().toISOString(),
+          read: false,
+        };
+
+        set((state) => ({
+          notifications: addNotificationToList(state.notifications, notification),
+          unreadNotificationCount: state.notifications.some((item) => item.id === notification.id && !item.read)
+            ? state.unreadNotificationCount
+            : state.unreadNotificationCount + 1,
+        }));
+
+        if (payload.type === "friend_request_accepted") {
+          toast.success(message);
+        } else {
+          toast(message);
+        }
+      }
+
+      await get().getFriendRequests();
+      await get().getUsers();
     };
 
     const handleReconnect = () => {
@@ -383,6 +466,13 @@ export const useChatStore = create((set, get) => ({
   },
 
   setUserSearchText: (userSearchText) => set({ userSearchText }),
+
+  markNotificationsRead: () => set((state) => ({
+    notifications: state.notifications.map((notification) => ({ ...notification, read: true })),
+    unreadNotificationCount: 0,
+  })),
+
+  clearNotifications: () => set({ notifications: [], unreadNotificationCount: 0 }),
 
   setSelectedUser: (selectedUser) => set({
     selectedUser,
