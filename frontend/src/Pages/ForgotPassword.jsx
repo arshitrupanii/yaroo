@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { ArrowLeft, Loader2, Mail, MessageSquare } from "lucide-react";
+import { ArrowLeft, Loader2, Mail } from "lucide-react";
 import { useAuthStore } from "../store/useAuhstore";
+import BrandLogo from "../components/BrandLogo";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -25,9 +26,7 @@ const ForgotPassword = () => {
         <div className="w-full space-y-7">
           <div className="text-center mb-8">
             <div className="flex flex-col items-center gap-2 group">
-              <div className="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <MessageSquare className="size-6" />
-              </div>
+              <BrandLogo size="md" showText={false} className="transition-transform duration-200 group-hover:-translate-y-0.5" />
               <h1 className="text-2xl font-bold mt-2">Reset Password</h1>
               <p className="text-base-content/60">Enter your email to create a reset link</p>
             </div>

@@ -15,6 +15,7 @@ MONGO_MAX_POOL_SIZE=20
 JWT_SECRET=your_random_32_plus_character_secret
 FRONTEND_URL=https://your-app-domain.com
 PASSWORD_RESET_URL=https://your-app-domain.com
+REDIS_URL=redis://default:your_password@your-redis-host:6379
 ```
 
 Set these when password reset emails should be delivered through Resend:
@@ -41,7 +42,10 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 - Keep `.env` files out of git. Use the hosting provider's environment variable settings.
 - `PASSWORD_RESET_URL` must point to the live frontend domain, not localhost.
 - `FRONTEND_URL` must match the live frontend origin so cookies and CORS work correctly.
+- `REDIS_URL` is required in production so realtime events and online presence work across multiple backend instances.
 - Use MongoDB Atlas or another managed MongoDB service with IP/network access configured for the backend host.
+- Use a managed Redis service with TLS/network access configured for the backend host.
+- Configure the load balancer for WebSocket upgrades. If long polling remains enabled, use sticky sessions.
 - Keep `MONGO_AUTO_INDEX=false` in production. Run the index ensure command during deploy or maintenance instead.
 - Never run `npm run seed` against production unless you intentionally want to reset sample data and set `ALLOW_DATABASE_RESET=true`.
 
@@ -93,3 +97,4 @@ The health response should include `"database":{"status":"connected"}`.
 - In development only, reset links may be logged/returned for testing.
 - In production, missing email provider config fails password reset email delivery instead of exposing reset links.
 - Messages are saved in MongoDB first, then delivered over WebSocket with client acknowledgement and reconnect backfill.
+- Realtime message, typing, seen, friend, and notification events target authenticated user rooms. With `REDIS_URL`, Socket.IO fans those events across all backend instances.

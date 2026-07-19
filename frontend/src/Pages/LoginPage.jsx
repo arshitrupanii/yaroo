@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuhstore";
 import { Link } from "react-router-dom";
-import { Eye, EyeOff, Loader2, Lock, Mail, MessageSquare } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import toast from "react-hot-toast";
+import BrandLogo from "../components/BrandLogo";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -29,24 +30,16 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-base-100 flex items-center justify-center px-4 py-8">
-      {/* Left Side - Form */}
       <div className="w-full max-w-md p-2 sm:p-4">
         <div className="w-full space-y-7">
-          {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex flex-col items-center gap-2 group">
-              <div
-                className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/20
-              transition-colors"
-              >
-                <MessageSquare className="w-6 h-6" />
-              </div>
+              <BrandLogo size="md" showText={false} className="transition-transform duration-200 group-hover:-translate-y-0.5" />
               <h1 className="text-2xl font-bold mt-2">Welcome Back</h1>
               <p className="text-base-content/60">Sign in to your account</p>
             </div>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="form-control">
               <label className="label">

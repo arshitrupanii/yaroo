@@ -68,14 +68,11 @@ const MessageInput = () => {
       emitStopTyping();
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      
-      // Refocus input to keep keyboard open on mobile
+
       setTimeout(() => {
         textInputRef.current?.focus();
       }, 100);
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      // Still refocus even on error
+    } catch {
       setTimeout(() => {
         textInputRef.current?.focus();
       }, 100);

@@ -1,7 +1,5 @@
 import { ApiError } from '../lib/ApiError.js';
 
-const isProduction = process.env.NODE_ENV === 'production';
-
 const normalizeError = (error) => {
     if (error instanceof ApiError) {
         return error;

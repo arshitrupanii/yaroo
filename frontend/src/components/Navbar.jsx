@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuhstore";
 import { useChatStore } from "../store/useChatstore";
-import { Bell, CheckCheck, LogOut, MessageCircleMore, Search, Settings2, Trash2, UserRound, X } from "lucide-react";
+import { Bell, CheckCheck, LogOut, Search, Settings2, Trash2, UserRound, X } from "lucide-react";
+import BrandLogo from "./BrandLogo";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
@@ -75,11 +76,7 @@ const Navbar = () => {
     <header className="grid h-14 min-h-14 grid-cols-[auto_minmax(8rem,1fr)_auto] items-center gap-2 border-b border-base-300/70 bg-base-100/90 px-2 backdrop-blur supports-[backdrop-filter]:bg-base-100/75 sm:gap-3 sm:px-4">
       <div className="min-w-0">
         <Link to="/" className="group flex min-w-0 items-center gap-2" aria-label="Yaroo home">
-          <span className="relative flex size-9 flex-shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary text-primary-content shadow-sm transition-transform duration-200 group-hover:-translate-y-0.5">
-            <MessageCircleMore className="size-4.5" strokeWidth={2.3} />
-            <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-accent ring-2 ring-base-100" />
-          </span>
-          <span className="hidden truncate text-[15px] font-bold tracking-normal text-base-content sm:block">Yaroo</span>
+          <BrandLogo size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5 [&>span:last-child]:hidden sm:[&>span:last-child]:block" />
         </Link>
       </div>
 

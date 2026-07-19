@@ -27,6 +27,6 @@ export const corsOptions = {
 
     return callback(new Error(`CORS blocked origin: ${origin}`));
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true
 };

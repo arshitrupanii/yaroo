@@ -53,11 +53,35 @@ const isRequestCanceled = (error) => (
   error?.code === "ERR_CANCELED" || error?.name === "CanceledError"
 );
 
+const logStoreError = (...args) => {
+  if (import.meta.env.DEV) console.error(...args);
+};
+
 const updateUserUnreadCount = (users, userId, updater) => (
   users.map((user) => (
     user._id === userId
       ? { ...user, unreadCount: Math.max(0, updater(user.unreadCount || 0)) }
       : user
+  ))
+);
+
+const updateUserLastMessage = (users, userId, lastMessage) => (
+  users.map((user) => (
+    user._id === userId ? { ...user, lastMessage } : user
+  ))
+);
+
+const updateLastMessageIfMatching = (users, message) => (
+  users.map((user) => (
+    user.lastMessage?._id === message._id
+      ? { ...user, lastMessage: { ...user.lastMessage, ...message } }
+      : user
+  ))
+);
+
+const clearLastMessageIfMatching = (users, messageId) => (
+  users.map((user) => (
+    user.lastMessage?._id === messageId ? { ...user, lastMessage: null } : user
   ))
 );
 
@@ -128,7 +152,7 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       if (isRequestCanceled(error)) return;
 
-      console.error("error in get user : ", error);
+      logStoreError("error in get user : ", error);
       toast.error(formatApiError(error, "Could not load users"));
 
     } finally {
@@ -160,7 +184,7 @@ export const useChatStore = create((set, get) => ({
     } catch (error) {
       if (isRequestCanceled(error)) return;
 
-      console.error("error in search user : ", error);
+      logStoreError("error in search user : ", error);
       toast.error(formatApiError(error, "Could not search users"));
 
     } finally {
@@ -173,7 +197,7 @@ export const useChatStore = create((set, get) => ({
       const res = await Axiosinstance.get("/friends");
       set({ friendRequests: res.data });
     } catch (error) {
-      console.error("error in get friends : ", error);
+      logStoreError("error in get friends : ", error);
       toast.error(formatApiError(error, "Could not load friends"));
     }
   },
@@ -221,7 +245,7 @@ export const useChatStore = create((set, get) => ({
       });
 
     } catch (error) {
-      console.error("error in get message : ", error);
+      logStoreError("error in get message : ", error);
       toast.error(formatApiError(error, "Could not load messages"));
 
     } finally {
@@ -234,7 +258,7 @@ export const useChatStore = create((set, get) => ({
       await Axiosinstance.patch(`/messages/seen/${userId}`);
       set({ users: updateUserUnreadCount(get().users, userId, () => 0) });
     } catch (error) {
-      console.error("error in mark messages seen : ", error);
+      logStoreError("error in mark messages seen : ", error);
     }
   },
   
@@ -243,10 +267,13 @@ export const useChatStore = create((set, get) => ({
 
     try {
       const res = await Axiosinstance.post(`/messages/send/${selectedUser._id}`, messageData);
-      set({ messages: upsertMessage(get().messages, res.data) });
+      set({
+        messages: upsertMessage(get().messages, res.data),
+        users: updateUserLastMessage(get().users, selectedUser._id, res.data),
+      });
 
     } catch (error) {
-      console.error("error in send message : ", error);
+      logStoreError("error in send message : ", error);
       toast.error(formatApiError(error, "Could not send message"));
       throw error;
     }
@@ -258,7 +285,8 @@ export const useChatStore = create((set, get) => ({
       set({
         messages: get().messages.map((message) => (
           message._id === messageId ? res.data : message
-        ))
+        )),
+        users: updateLastMessageIfMatching(get().users, res.data),
       });
     } catch (error) {
       toast.error(formatApiError(error, "Could not edit message"));
@@ -268,7 +296,11 @@ export const useChatStore = create((set, get) => ({
   deleteMessage: async (messageId) => {
     try {
       await Axiosinstance.delete(`/messages/${messageId}`);
-      set({ messages: get().messages.filter((message) => message._id !== messageId) });
+      set({
+        messages: get().messages.filter((message) => message._id !== messageId),
+        users: clearLastMessageIfMatching(get().users, messageId),
+      });
+      await get().getUsers();
     } catch (error) {
       toast.error(formatApiError(error, "Could not delete message"));
     }
@@ -312,7 +344,11 @@ export const useChatStore = create((set, get) => ({
         };
 
         set((state) => ({
-          users: updateUserUnreadCount(state.users, newMessage.senderId, (count) => count + 1),
+          users: updateUserLastMessage(
+            updateUserUnreadCount(state.users, newMessage.senderId, (count) => count + 1),
+            newMessage.senderId,
+            newMessage
+          ),
           notifications: addNotificationToList(state.notifications, notification),
           unreadNotificationCount: state.notifications.some((item) => item.id === notification.id && !item.read)
             ? state.unreadNotificationCount
@@ -327,7 +363,11 @@ export const useChatStore = create((set, get) => ({
 
       set({
         messages: upsertMessage(get().messages, newMessage),
-        users: updateUserUnreadCount(get().users, newMessage.senderId, () => 0),
+        users: updateUserLastMessage(
+          updateUserUnreadCount(get().users, newMessage.senderId, () => 0),
+          newMessage.senderId,
+          newMessage
+        ),
       });
       get().markMessagesSeen(newMessage.senderId);
     };
@@ -343,7 +383,10 @@ export const useChatStore = create((set, get) => ({
 
       if (!belongsToSelectedConversation && !alreadyVisible) return;
 
-      set({ messages: upsertMessage(get().messages, updatedMessage) });
+      set({
+        messages: upsertMessage(get().messages, updatedMessage),
+        users: updateLastMessageIfMatching(get().users, updatedMessage),
+      });
     };
 
     const handleMessageDeleted = ({ _id, senderId, status }) => {
@@ -354,8 +397,8 @@ export const useChatStore = create((set, get) => ({
       set({
         messages: get().messages.filter((message) => message._id !== _id),
         users: shouldClearUnread
-          ? updateUserUnreadCount(get().users, senderId, (count) => count - 1)
-          : get().users,
+          ? clearLastMessageIfMatching(updateUserUnreadCount(get().users, senderId, (count) => count - 1), _id)
+          : clearLastMessageIfMatching(get().users, _id),
       });
     };
 

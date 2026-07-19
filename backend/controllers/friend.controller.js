@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import User from '../model/user.model.js';
 import { ApiError } from '../lib/ApiError.js';
-import { getReceiverSocketId, io } from '../lib/socket.js';
+import { emitToUser } from '../lib/socket.js';
 
 const publicFields = '_id firstname username email profilePicture';
 
@@ -19,9 +19,10 @@ const ensureValidUserId = (userId) => {
     }
 };
 
+const hasId = (ids, userId) => ids.some((id) => id.toString() === userId.toString());
+
 const emitFriendUpdate = (userId, payload = {}) => {
-    const socketIds = getReceiverSocketId(userId.toString());
-    if (socketIds.length > 0) io.to(socketIds).emit('friendUpdate', payload);
+    emitToUser(userId, 'friendUpdate', payload);
 };
 
 export const getFriendsOverview = async (req, res) => {
@@ -57,15 +58,15 @@ export const sendFriendRequest = async (req, res) => {
         throw new ApiError(404, 'User not found', { code: 'USER_NOT_FOUND' });
     }
 
-    if (currentUser.friends.some((id) => id.toString() === userId)) {
+    if (hasId(currentUser.friends, userId)) {
         throw new ApiError(409, 'You are already friends', { code: 'ALREADY_FRIENDS' });
     }
 
-    if (currentUser.friendRequestsSent.some((id) => id.toString() === userId)) {
+    if (hasId(currentUser.friendRequestsSent, userId)) {
         throw new ApiError(409, 'Friend request already sent', { code: 'REQUEST_ALREADY_SENT' });
     }
 
-    const acceptsExistingRequest = currentUser.friendRequestsReceived.some((id) => id.toString() === userId);
+    const acceptsExistingRequest = hasId(currentUser.friendRequestsReceived, userId);
 
     if (acceptsExistingRequest) {
         currentUser.friends.addToSet(targetUser._id);
@@ -103,7 +104,7 @@ export const acceptFriendRequest = async (req, res) => {
         throw new ApiError(404, 'User not found', { code: 'USER_NOT_FOUND' });
     }
 
-    if (!currentUser.friendRequestsReceived.some((id) => id.toString() === userId)) {
+    if (!hasId(currentUser.friendRequestsReceived, userId)) {
         throw new ApiError(404, 'Friend request not found', { code: 'REQUEST_NOT_FOUND' });
     }
 
@@ -135,6 +136,10 @@ export const rejectFriendRequest = async (req, res) => {
         throw new ApiError(404, 'User not found', { code: 'USER_NOT_FOUND' });
     }
 
+    if (!hasId(currentUser.friendRequestsReceived, userId)) {
+        throw new ApiError(404, 'Friend request not found', { code: 'REQUEST_NOT_FOUND' });
+    }
+
     currentUser.friendRequestsReceived.pull(requester._id);
     requester.friendRequestsSent.pull(currentUser._id);
 
@@ -159,6 +164,10 @@ export const removeFriend = async (req, res) => {
 
     if (!friend) {
         throw new ApiError(404, 'User not found', { code: 'USER_NOT_FOUND' });
+    }
+
+    if (!hasId(currentUser.friends, userId)) {
+        throw new ApiError(409, 'You are not friends with this user', { code: 'NOT_FRIENDS' });
     }
 
     currentUser.friends.pull(friend._id);

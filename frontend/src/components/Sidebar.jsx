@@ -3,6 +3,7 @@ import { useChatStore } from "../store/useChatstore";
 import { useAuthStore } from "../store/useAuhstore.js";
 import { Check, Inbox, Pin, PinOff, UserPlus, UsersRound, X } from "lucide-react";
 import AvatarInitials from "./AvatarInitials";
+import { formatMessageTime } from "../lib/utils";
 
 const Sidebar = () => {
   const {
@@ -19,11 +20,12 @@ const Sidebar = () => {
     setSelectedUser,
     setUserSearchText,
     togglePinnedUser,
+    typingUsers,
     userSearchText,
     users,
   } = useChatStore();
 
-  const { onlineUsers, socket } = useAuthStore();
+  const { onlineUsers } = useAuthStore();
   const [filterMode, setFilterMode] = useState("all");
   const hasSearchedRef = useRef(false);
   const isSearching = userSearchText.trim().length > 0;
@@ -32,24 +34,6 @@ const Sidebar = () => {
     getUsers();
     getFriendRequests();
   }, [getFriendRequests, getUsers]);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    const refreshFriends = () => {
-      getFriendRequests();
-      const nextSearch = userSearchText.trim();
-      if (nextSearch) {
-        searchUsers(nextSearch);
-      } else {
-        getUsers();
-      }
-    };
-
-    socket.on("friendUpdate", refreshFriends);
-
-    return () => socket.off("friendUpdate", refreshFriends);
-  }, [getFriendRequests, getUsers, searchUsers, socket, userSearchText]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -83,9 +67,22 @@ const Sidebar = () => {
       if (aPinned && bPinned) return aPinnedIndex - bPinnedIndex;
       if (aPinned) return -1;
       if (bPinned) return 1;
+      if ((a.unreadCount || 0) !== (b.unreadCount || 0)) {
+        return (b.unreadCount || 0) - (a.unreadCount || 0);
+      }
+      const aLastMessageTime = new Date(a.lastMessage?.createdAt || 0).getTime();
+      const bLastMessageTime = new Date(b.lastMessage?.createdAt || 0).getTime();
+      if (aLastMessageTime !== bLastMessageTime) return bLastMessageTime - aLastMessageTime;
       return a.firstname.localeCompare(b.firstname);
     });
   const skeletonRows = Array(7).fill(null);
+
+  const getLastMessagePreview = (user) => {
+    if (typingUsers[user._id]) return "typing...";
+    if (user.lastMessage?.text?.trim()) return user.lastMessage.text.trim();
+    if (user.lastMessage?.image) return "Image";
+    return `@${user.username || "not-set"}`;
+  };
 
   const renderUserAction = (user) => {
     if (!isSearching || user.friendshipStatus === "friends") return null;
@@ -233,6 +230,7 @@ const Sidebar = () => {
           const canOpenChat = user.friendshipStatus === "friends" || !isSearching;
           const unreadCount = user.unreadCount || 0;
           const showUnreadBadge = !isSearching && unreadCount > 0 && selectedUser?._id !== user._id;
+          const isTyping = typingUsers[user._id];
 
           return (
             <div
@@ -260,8 +258,15 @@ const Sidebar = () => {
                   <div className="flex items-center gap-1.5">
                     <div className="truncate text-sm font-medium leading-tight text-base-content">{user.firstname}</div>
                     {isPinned && <Pin className="size-3 flex-shrink-0 fill-current text-primary" />}
+                    {user.lastMessage?.createdAt && !isTyping && (
+                      <time className="ml-auto flex-shrink-0 text-[10px] text-base-content/35">
+                        {formatMessageTime(user.lastMessage.createdAt)}
+                      </time>
+                    )}
                   </div>
-                  <div className="truncate text-xs text-base-content/50">@{user.username || "not-set"}</div>
+                  <div className={`truncate text-xs ${isTyping ? "font-medium text-primary" : unreadCount > 0 ? "font-medium text-base-content/70" : "text-base-content/50"}`}>
+                    {getLastMessagePreview(user)}
+                  </div>
                 </div>
               </button>
 

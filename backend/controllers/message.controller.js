@@ -1,7 +1,7 @@
 import User from '../model/user.model.js';
 import Message from '../model/message.model.js';
 import cloudinary from '../lib/cloudinary.js';
-import { getReceiverSocketId, io } from "../lib/socket.js";
+import { emitToUser, emitToUsers, emitToUserWithAck } from "../lib/socket.js";
 import { ApiError } from '../lib/ApiError.js';
 
 const userFields = "-password -createdAt -updatedAt -friendRequestsSent -friendRequestsReceived";
@@ -22,15 +22,12 @@ const assertFriends = async (userId, otherUserId) => {
 };
 
 const emitMessageWithDeliveryAck = (message, sender) => {
-    const receiverSocketIds = getReceiverSocketId(message.receiverId.toString());
-    if (receiverSocketIds.length === 0) return;
-
     const messagePayload = {
         ...message.toObject(),
         sender
     };
 
-    io.to(receiverSocketIds).timeout(5000).emit("newMessage", messagePayload, async (error, responses = []) => {
+    emitToUserWithAck(message.receiverId, "newMessage", messagePayload, 5000, async (error, responses = []) => {
         const delivered = responses.some((response) => response?.received === true);
 
         if (!delivered) {
@@ -47,13 +44,7 @@ const emitMessageWithDeliveryAck = (message, sender) => {
 
             if (!deliveredMessage) return;
 
-            const senderSocketIds = getReceiverSocketId(message.senderId.toString());
-            const latestReceiverSocketIds = getReceiverSocketId(message.receiverId.toString());
-            const notifySocketIds = [...new Set([...senderSocketIds, ...latestReceiverSocketIds])];
-
-            if (notifySocketIds.length > 0) {
-                io.to(notifySocketIds).emit("messageUpdated", deliveredMessage);
-            }
+            emitToUsers([message.senderId, message.receiverId], "messageUpdated", deliveredMessage);
         } catch (deliveryError) {
             console.error(`Failed to update delivery status for ${message._id}: ${deliveryError.message}`);
         }
@@ -73,10 +64,7 @@ const markConversationMessagesSeen = async (viewerId, senderId) => {
     );
 
     if (seenUpdate.modifiedCount > 0) {
-        const senderSocketIds = getReceiverSocketId(senderId.toString());
-        if (senderSocketIds.length > 0) {
-            io.to(senderSocketIds).emit("messagesSeen", { by: viewerId, conversationId: viewerId });
-        }
+        emitToUser(senderId, "messagesSeen", { by: viewerId, conversationId: viewerId });
     }
 
     return seenUpdate.modifiedCount;
@@ -108,9 +96,42 @@ export const getUserFromSidebar = async (req, res) => {
         unreadCounts.map((item) => [item._id.toString(), item.count])
     );
 
+    const lastMessages = friendIds.length > 0
+        ? await Message.aggregate([
+            {
+                $match: {
+                    deletedAt: { $exists: false },
+                    deletedFor: { $ne: loggedInUserId },
+                    $or: [
+                        { senderId: loggedInUserId, receiverId: { $in: friendIds } },
+                        { senderId: { $in: friendIds }, receiverId: loggedInUserId }
+                    ]
+                }
+            },
+            { $sort: { createdAt: -1 } },
+            {
+                $addFields: {
+                    conversationUserId: {
+                        $cond: [
+                            { $eq: ['$senderId', loggedInUserId] },
+                            '$receiverId',
+                            '$senderId'
+                        ]
+                    }
+                }
+            },
+            { $group: { _id: '$conversationUserId', message: { $first: '$$ROOT' } } }
+        ])
+        : [];
+
+    const lastMessageByUserId = new Map(
+        lastMessages.map((item) => [item._id.toString(), item.message])
+    );
+
     const friendsWithUnreadCounts = friends.map((friend) => ({
         ...friend.toObject(),
-        unreadCount: unreadCountByUserId.get(friend._id.toString()) || 0
+        unreadCount: unreadCountByUserId.get(friend._id.toString()) || 0,
+        lastMessage: lastMessageByUserId.get(friend._id.toString()) || null
     }));
 
     return res.status(200).json(friendsWithUnreadCounts);
@@ -161,6 +182,7 @@ export const getMessage = async (req, res) => {
     const myId = req.user._id;
 
     await assertFriends(myId, userToChatid);
+    await markConversationMessagesSeen(myId, userToChatid);
 
     const messages = await Message.find({
         deletedAt: { $exists: false },
@@ -170,8 +192,6 @@ export const getMessage = async (req, res) => {
             { senderId: userToChatid, receiverId: myId }
         ]
     }).sort({ createdAt: 1 });
-
-    await markConversationMessagesSeen(myId, userToChatid);
 
     return res.status(200).json(messages);
 };
@@ -244,10 +264,7 @@ export const editMessage = async (req, res) => {
     message.editedAt = new Date();
     await message.save();
 
-    const receiverSocketIds = getReceiverSocketId(message.receiverId.toString());
-    if (receiverSocketIds.length > 0) {
-        io.to(receiverSocketIds).emit("messageUpdated", message);
-    }
+    emitToUser(message.receiverId, "messageUpdated", message);
 
     return res.status(200).json(message);
 };
@@ -270,15 +287,12 @@ export const deleteMessage = async (req, res) => {
         message.text = '';
         message.image = '';
 
-        const receiverSocketIds = getReceiverSocketId(message.receiverId.toString());
-        if (receiverSocketIds.length > 0) {
-            io.to(receiverSocketIds).emit("messageDeleted", {
-                _id: message._id,
-                senderId: message.senderId,
-                receiverId: message.receiverId,
-                status: message.status
-            });
-        }
+        emitToUser(message.receiverId, "messageDeleted", {
+            _id: message._id,
+            senderId: message.senderId,
+            receiverId: message.receiverId,
+            status: message.status
+        });
     } else {
         message.deletedFor.addToSet(userId);
     }

@@ -129,10 +129,8 @@ export const useAuthStore = create((set, get) => ({
       if (!authUser || get().socket?.connected) return;
       
       const socket = io(SOCKET_URL, {
-        query: {
-          userId: authUser._id,
-        },
         autoConnect: false,
+        withCredentials: true,
         reconnection: true,
         reconnectionAttempts: Infinity,
         reconnectionDelay: 500,
@@ -149,7 +147,16 @@ export const useAuthStore = create((set, get) => ({
         set({ onlineUsers: userIds });
       });
 
+      socket.on("connect_error", (error) => {
+        if (error.message === "Unauthorized socket") {
+          socket.disconnect();
+          set({ socket: null, onlineUsers: [] });
+        }
 
+        if (import.meta.env.MODE === "development") {
+          console.error("Socket connection error:", error.message);
+        }
+      });
     } catch (error) {
       if (import.meta.env.MODE === "development") {
         console.error("Error connecting socket:", error);
@@ -159,7 +166,7 @@ export const useAuthStore = create((set, get) => ({
 
   disconnectSocket: () => {
     const socket = get().socket;
-    if (socket?.connected) socket.disconnect();
+    if (socket) socket.disconnect();
     set({ socket: null, onlineUsers: [] });
   },
 

@@ -34,7 +34,7 @@ const ChatHeader = () => {
             <h3 className="truncate text-sm font-semibold leading-tight">{selectedUser.firstname}</h3>
             <p className="text-xs text-base-content/60 truncate">
               {isTyping ? "Typing..." : onlineUsers.includes(selectedUser._id) ? "Online" : "Offline"}
-              {selectedUser.username ? ` • @${selectedUser.username}` : ""}
+              {selectedUser.username ? ` - @${selectedUser.username}` : ""}
             </p>
           </div>
         </div>

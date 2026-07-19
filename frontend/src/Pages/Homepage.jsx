@@ -12,12 +12,10 @@ const HomePage = () => {
       <div className="flex h-full min-h-0">
         <div className="w-full min-w-0">
           <div className="flex h-full min-h-0">
-            {/* Sidebar - hidden on mobile when chat is selected, always visible on desktop */}
             <div className={`${selectedUser ? 'hidden lg:block' : 'block w-full'} h-full min-h-0 lg:w-auto lg:flex-shrink-0`}>
               <Sidebar />
             </div>
 
-            {/* Chat area - hidden on mobile when no chat selected, always visible on desktop */}
             <div className={`${!selectedUser ? 'hidden lg:flex' : 'flex'} min-h-0 flex-1 flex-col min-w-0`}>
               {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
             </div>

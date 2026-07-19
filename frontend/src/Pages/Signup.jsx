@@ -6,12 +6,10 @@ import {
   Loader2,
   Lock,
   Mail,
-  MessageSquare,
   User,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// import AuthImagePattern from "../components/AuthImagePattern";
+import BrandLogo from "../components/BrandLogo";
 import toast from "react-hot-toast";
 
 const isStrongPassword = (password) => (
@@ -54,18 +52,11 @@ const SignUpPage = () => {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-base-100 flex items-center justify-center px-4 py-8">
-      {/* left side */}
       <div className="w-full max-w-md p-2 sm:p-4">
         <div className="w-full space-y-7">
-          {/* LOGO */}
           <div className="text-center mb-8">
             <div className="flex flex-col items-center gap-2 group">
-              <div
-                className="size-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center 
-              group-hover:bg-primary/20 transition-colors"
-              >
-                <MessageSquare className="size-6" />
-              </div>
+              <BrandLogo size="md" showText={false} className="transition-transform duration-200 group-hover:-translate-y-0.5" />
               <h1 className="text-2xl font-bold mt-2">Create Account</h1>
               <p className="text-base-content/60">
                 Get started with your free account
@@ -192,12 +183,6 @@ const SignUpPage = () => {
         </div>
       </div>
 
-      {/* right side */}
-
-      {/* <AuthImagePattern
-        title="Join our community"
-        subtitle="Connect with friends, share moments, and stay in touch with your loved ones."
-      /> */}
     </div>
   );
 };

@@ -10,7 +10,7 @@ import authRoutes from './routes/auth.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import friendRoutes from './routes/friend.routes.js';
 import { connectDB, disconnectDB, getDbHealth } from './lib/db.js';
-import { app, server } from "./lib/socket.js";
+import { app, closeSocketAdapter, configureSocketAdapter, server } from "./lib/socket.js";
 import { requestIdMiddleware } from './middleware/requestId.middleware.js';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware.js';
 import { ApiError } from './lib/ApiError.js';
@@ -83,6 +83,7 @@ async function startServer() {
   try {
     validateEnv();
     await connectDB();
+    await configureSocketAdapter();
 
     server.listen(PORT, () => {
       console.log("Server running on port", PORT);
@@ -105,6 +106,7 @@ const shutdown = async (signal) => {
 
   server.close(async () => {
     try {
+      await closeSocketAdapter();
       await disconnectDB();
       console.log("Server closed");
       process.exit(0);
