@@ -2,17 +2,22 @@
 
 This file is the production handoff checklist for Yaroo. Do not commit real secrets or API keys to this repository.
 
-## Required Environment Variables
+## Environment Variables
 
-Set these on the backend hosting platform:
+Set these required values on the backend hosting platform:
 
 ```env
 NODE_ENV=production
-PORT=5000
 MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_random_32_plus_character_secret
+```
+
+Set these recommended production values:
+
+```env
+PORT=5000
 MONGO_AUTO_INDEX=false
 MONGO_MAX_POOL_SIZE=20
-JWT_SECRET=your_random_32_plus_character_secret
 FRONTEND_URL=https://your-app-domain.com
 PASSWORD_RESET_URL=https://your-app-domain.com
 REDIS_URL=redis://default:your_password@your-redis-host:6379
@@ -42,7 +47,7 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 - Keep `.env` files out of git. Use the hosting provider's environment variable settings.
 - `PASSWORD_RESET_URL` must point to the live frontend domain, not localhost.
 - `FRONTEND_URL` must match the live frontend origin so cookies and CORS work correctly.
-- `REDIS_URL` is required in production so realtime events and online presence work across multiple backend instances.
+- `REDIS_URL` is required for multiple backend instances so realtime events and online presence work across the cluster.
 - Use MongoDB Atlas or another managed MongoDB service with IP/network access configured for the backend host.
 - Use a managed Redis service with TLS/network access configured for the backend host.
 - Configure the load balancer for WebSocket upgrades. If long polling remains enabled, use sticky sessions.

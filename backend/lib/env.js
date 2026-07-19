@@ -1,5 +1,5 @@
 const requiredEnvVars = ["MONGODB_URI", "JWT_SECRET"];
-const productionRequiredEnvVars = ["FRONTEND_URL", "REDIS_URL"];
+const productionRecommendedEnvVars = ["FRONTEND_URL", "REDIS_URL"];
 
 const optionalEnvVars = [
   "PORT",
@@ -37,22 +37,23 @@ export const validateEnv = () => {
     throw new Error(`Missing required environment variable(s): ${missing.join(", ")}`);
   }
 
-  if (process.env.NODE_ENV === "production") {
-    const missingProduction = productionRequiredEnvVars.filter((key) => !process.env[key]?.trim());
-    if (missingProduction.length > 0) {
-      throw new Error(`Missing production environment variable(s): ${missingProduction.join(", ")}`);
-    }
-  }
-
   if (process.env.NODE_ENV === "production" && process.env.JWT_SECRET.length < 32) {
     throw new Error("JWT_SECRET must be at least 32 characters in production");
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    const missingRecommended = productionRecommendedEnvVars.filter((key) => !process.env[key]?.trim());
+    if (missingRecommended.length > 0) {
+      console.warn(`Missing recommended production env var(s): ${missingRecommended.join(", ")}`);
+      console.warn("App will start, but cross-origin frontend access or multi-instance realtime scaling may be limited.");
+    }
   }
 };
 
 export const printEnvHelp = () => {
   console.error("Backend configuration error.");
   console.error(`Required env vars: ${requiredEnvVars.join(", ")}`);
-  console.error(`Production-only required env vars: ${productionRequiredEnvVars.join(", ")}`);
+  console.error(`Production recommended env vars: ${productionRecommendedEnvVars.join(", ")}`);
   console.error(`Optional env vars: ${optionalEnvVars.join(", ")}`);
   console.error("Copy .env.example to .env and fill the missing values.");
 };

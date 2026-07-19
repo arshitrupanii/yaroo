@@ -35,7 +35,7 @@ Message, friend, typing, seen, edit, and delete events emit to user rooms instea
 - CORS allows `PATCH`, which is required by realtime read receipts.
 - Client sockets send credentials and no longer trust a spoofable `userId` query.
 
-## Required Production Environment
+## Production Environment For 10k
 
 ```env
 NODE_ENV=production
@@ -45,6 +45,8 @@ FRONTEND_URL=https://your-domain.com
 REDIS_URL=redis://default:<password>@<redis-host>:6379
 MONGO_AUTO_INDEX=false
 ```
+
+`REDIS_URL` is optional for a single backend instance, but it is required before running multiple backend instances for the 10k concurrent chat target.
 
 Run indexes during deploy or maintenance:
 
