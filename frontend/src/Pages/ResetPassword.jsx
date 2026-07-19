@@ -50,7 +50,7 @@ const ResetPassword = () => {
         <div className="w-full space-y-7">
           <div className="text-center mb-8">
             <div className="flex flex-col items-center gap-2 group">
-              <BrandLogo size="md" showText={false} className="transition-transform duration-200 group-hover:-translate-y-0.5" />
+              <BrandLogo size="md" className="transition-transform duration-200 group-hover:-translate-y-0.5" />
               <h1 className="text-2xl font-bold mt-2">Create New Password</h1>
               <p className="text-base-content/60">Choose a stronger password for your account</p>
             </div>

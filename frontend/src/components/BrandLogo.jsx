@@ -1,18 +1,13 @@
 import PropTypes from "prop-types";
-import { MessageCircleMore } from "lucide-react";
 
 const sizeClasses = {
   sm: {
-    mark: "size-9 rounded-lg",
-    icon: "size-4.5",
+    mark: "size-9",
     text: "text-[15px]",
-    dot: "size-2",
   },
   md: {
-    mark: "size-12 rounded-xl",
-    icon: "size-6",
+    mark: "size-12",
     text: "text-2xl",
-    dot: "size-2.5",
   },
 };
 
@@ -21,13 +16,13 @@ const BrandLogo = ({ showText = true, size = "md", className = "" }) => {
 
   return (
     <span className={`inline-flex min-w-0 items-center gap-2 ${className}`}>
-      <span
-        className={`relative flex flex-shrink-0 items-center justify-center border border-primary/20 bg-primary text-primary-content shadow-sm ${classes.mark}`}
+      <img
+        src="/yaroo.svg"
+        alt=""
+        className={`flex-shrink-0 ${classes.mark}`}
         aria-hidden="true"
-      >
-        <MessageCircleMore className={classes.icon} strokeWidth={2.35} />
-        <span className={`absolute -right-0.5 -top-0.5 rounded-full bg-accent ring-2 ring-base-100 ${classes.dot}`} />
-      </span>
+        draggable="false"
+      />
 
       {showText && (
         <span className={`truncate font-bold tracking-normal text-base-content ${classes.text}`}>
