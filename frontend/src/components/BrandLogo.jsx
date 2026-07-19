@@ -11,7 +11,7 @@ const sizeClasses = {
   },
 };
 
-const BrandLogo = ({ showText = true, size = "md", className = "" }) => {
+const BrandLogo = ({ showText = false, size = "md", className = "" }) => {
   const classes = sizeClasses[size] || sizeClasses.md;
 
   return (

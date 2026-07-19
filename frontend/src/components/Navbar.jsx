@@ -1,12 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuhstore";
 import { useChatStore } from "../store/useChatstore";
-import { Bell, CheckCheck, LogOut, Moon, Search, Settings2, SunMedium, Trash2, UserRound, X } from "lucide-react";
-import { Usethemes } from "../store/useTheme";
+import { Bell, CheckCheck, LogOut, Search, Settings2, Trash2, UserRound, X } from "lucide-react";
 import AvatarInitials from "./AvatarInitials";
 import BrandLogo from "./BrandLogo";
-
-const darkThemes = new Set(["dark", "night", "black", "dracula", "business", "dim", "sunset", "halloween", "forest", "luxury", "coffee"]);
 
 const Navbar = () => {
   const { logout, authUser, onlineUsers } = useAuthStore();
@@ -20,12 +17,10 @@ const Navbar = () => {
     userSearchText,
     users,
   } = useChatStore();
-  const { theme, setTheme } = Usethemes();
   const location = useLocation();
   const navigate = useNavigate();
 
   const showSearch = Boolean(authUser);
-  const isDarkTheme = darkThemes.has(theme);
 
   const openSearchContext = (forceSidebar = false) => {
     if (location.pathname !== "/") navigate("/");
@@ -78,20 +73,16 @@ const Navbar = () => {
     logout();
   };
 
-  const toggleTheme = () => {
-    setTheme(isDarkTheme ? "winter" : "night");
-  };
-
   return (
     <header className="sticky top-0 z-40 border-b border-base-300/60 bg-base-100/85 px-2 py-2 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-base-100/70 sm:px-4">
-      <div className="grid h-12 min-h-12 grid-cols-[auto_minmax(7rem,1fr)_auto] items-center gap-2 sm:gap-3">
-      <div className="min-w-0">
+      <div className="grid h-12 min-h-12 grid-cols-[2.75rem_minmax(7rem,1fr)_auto] items-center gap-2 sm:gap-3">
+      <div className="flex min-w-0 justify-start">
         <Link
           to="/"
-          className="group inline-flex min-w-0 items-center rounded-xl px-1.5 py-1 transition-colors hover:bg-base-200/70"
+          className="group inline-flex size-11 items-center justify-center rounded-2xl transition-colors hover:bg-base-200/70"
           aria-label="Yaroo home"
         >
-          <BrandLogo size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5 [&>span:last-child]:hidden md:[&>span:last-child]:block" />
+          <BrandLogo size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5" />
         </Link>
       </div>
 
@@ -126,22 +117,12 @@ const Navbar = () => {
 
       <nav className="flex flex-shrink-0 items-center justify-end gap-1">
         {authUser && (
-          <div className="hidden items-center gap-1 rounded-xl border border-base-300/60 bg-base-200/50 px-2.5 py-1.5 text-xs text-base-content/70 lg:flex">
+          <div className="hidden items-center gap-1 rounded-xl border border-base-300/60 bg-base-200/50 px-2.5 py-1.5 text-xs text-base-content/70 xl:flex">
             <span className="size-2 rounded-full bg-success shadow-[0_0_0_3px_hsl(var(--su)/0.14)]" />
             <span className="font-medium text-base-content">{onlineUsers.length}</span>
             online
           </div>
         )}
-
-        <button
-          type="button"
-          className="btn btn-ghost btn-sm btn-square rounded-xl"
-          onClick={toggleTheme}
-          aria-label={isDarkTheme ? "Switch to light theme" : "Switch to dark theme"}
-          title={isDarkTheme ? "Light theme" : "Dark theme"}
-        >
-          {isDarkTheme ? <SunMedium className="size-4" strokeWidth={2.2} /> : <Moon className="size-4" strokeWidth={2.2} />}
-        </button>
 
         {authUser && (
           <div className="dropdown dropdown-end">
