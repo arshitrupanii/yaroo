@@ -8,7 +8,7 @@ const HomePage = () => {
   const { selectedUser } = useChatStore();
 
   return (
-    <main className="h-[calc(100vh-3.5rem)] overflow-hidden bg-base-100">
+    <main className="h-[calc(100vh-4rem)] overflow-hidden bg-base-100">
       <div className="flex h-full min-h-0">
         <div className="w-full min-w-0">
           <div className="flex h-full min-h-0">

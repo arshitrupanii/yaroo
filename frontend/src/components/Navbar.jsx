@@ -1,11 +1,15 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/useAuhstore";
 import { useChatStore } from "../store/useChatstore";
-import { Bell, CheckCheck, LogOut, Search, Settings2, Trash2, UserRound, X } from "lucide-react";
+import { Bell, CheckCheck, LogOut, Moon, Search, Settings2, SunMedium, Trash2, UserRound, X } from "lucide-react";
+import { Usethemes } from "../store/useTheme";
+import AvatarInitials from "./AvatarInitials";
 import BrandLogo from "./BrandLogo";
 
+const darkThemes = new Set(["dark", "night", "black", "dracula", "business", "dim", "sunset", "halloween", "forest", "luxury", "coffee"]);
+
 const Navbar = () => {
-  const { logout, authUser } = useAuthStore();
+  const { logout, authUser, onlineUsers } = useAuthStore();
   const {
     clearNotifications,
     markNotificationsRead,
@@ -16,10 +20,12 @@ const Navbar = () => {
     userSearchText,
     users,
   } = useChatStore();
+  const { theme, setTheme } = Usethemes();
   const location = useLocation();
   const navigate = useNavigate();
 
   const showSearch = Boolean(authUser);
+  const isDarkTheme = darkThemes.has(theme);
 
   const openSearchContext = (forceSidebar = false) => {
     if (location.pathname !== "/") navigate("/");
@@ -72,17 +78,26 @@ const Navbar = () => {
     logout();
   };
 
+  const toggleTheme = () => {
+    setTheme(isDarkTheme ? "winter" : "night");
+  };
+
   return (
-    <header className="grid h-14 min-h-14 grid-cols-[auto_minmax(8rem,1fr)_auto] items-center gap-2 border-b border-base-300/70 bg-base-100/90 px-2 backdrop-blur supports-[backdrop-filter]:bg-base-100/75 sm:gap-3 sm:px-4">
+    <header className="sticky top-0 z-40 border-b border-base-300/60 bg-base-100/85 px-2 py-2 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-base-100/70 sm:px-4">
+      <div className="grid h-12 min-h-12 grid-cols-[auto_minmax(7rem,1fr)_auto] items-center gap-2 sm:gap-3">
       <div className="min-w-0">
-        <Link to="/" className="group flex min-w-0 items-center gap-2" aria-label="Yaroo home">
-          <BrandLogo size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5 [&>span:last-child]:hidden sm:[&>span:last-child]:block" />
+        <Link
+          to="/"
+          className="group inline-flex min-w-0 items-center rounded-xl px-1.5 py-1 transition-colors hover:bg-base-200/70"
+          aria-label="Yaroo home"
+        >
+          <BrandLogo size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5 [&>span:last-child]:hidden md:[&>span:last-child]:block" />
         </Link>
       </div>
 
       <div className="flex min-w-0 justify-center">
         {showSearch && (
-          <label className="input input-bordered input-sm flex h-9 min-h-9 w-full max-w-xl items-center gap-2 rounded-lg bg-base-100/80 px-3 shadow-sm transition-colors focus-within:border-primary">
+          <label className="flex h-10 min-h-10 w-full max-w-2xl items-center gap-2 rounded-xl border border-base-300/70 bg-base-200/55 px-3 shadow-inner transition-colors focus-within:border-primary focus-within:bg-base-100">
             <Search className="size-4 flex-shrink-0 text-base-content/45" />
             <input
               type="text"
@@ -109,7 +124,25 @@ const Navbar = () => {
         )}
       </div>
 
-      <nav className="flex flex-shrink-0 justify-end gap-1">
+      <nav className="flex flex-shrink-0 items-center justify-end gap-1">
+        {authUser && (
+          <div className="hidden items-center gap-1 rounded-xl border border-base-300/60 bg-base-200/50 px-2.5 py-1.5 text-xs text-base-content/70 lg:flex">
+            <span className="size-2 rounded-full bg-success shadow-[0_0_0_3px_hsl(var(--su)/0.14)]" />
+            <span className="font-medium text-base-content">{onlineUsers.length}</span>
+            online
+          </div>
+        )}
+
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm btn-square rounded-xl"
+          onClick={toggleTheme}
+          aria-label={isDarkTheme ? "Switch to light theme" : "Switch to dark theme"}
+          title={isDarkTheme ? "Light theme" : "Dark theme"}
+        >
+          {isDarkTheme ? <SunMedium className="size-4" strokeWidth={2.2} /> : <Moon className="size-4" strokeWidth={2.2} />}
+        </button>
+
         {authUser && (
           <div className="dropdown dropdown-end">
             <button
@@ -190,8 +223,9 @@ const Navbar = () => {
 
         {authUser && (
           <>
-            <Link to="/profile" className="btn btn-ghost btn-sm btn-square rounded-xl" aria-label="Profile" title="Profile">
-              <UserRound className="size-4" strokeWidth={2.2} />
+            <Link to="/profile" className="btn btn-ghost btn-sm h-9 min-h-9 gap-2 rounded-xl px-2" aria-label="Profile" title="Profile">
+              <AvatarInitials user={authUser} alt={authUser.firstname} className="size-6" textClassName="text-[10px]" />
+              <UserRound className="hidden size-4 sm:block" strokeWidth={2.2} />
             </Link>
 
             <button className="btn btn-ghost btn-sm btn-square rounded-xl" onClick={handleLogout} aria-label="Logout" title="Logout">
@@ -200,6 +234,7 @@ const Navbar = () => {
           </>
         )}
       </nav>
+      </div>
     </header>
   );
 };

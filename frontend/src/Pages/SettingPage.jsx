@@ -11,7 +11,7 @@ const SettingsPage = () => {
   const { theme, setTheme } = Usethemes();
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] bg-base-100">
+    <div className="min-h-[calc(100vh-4rem)] bg-base-100">
       <div className="container mx-auto px-4 py-10 max-w-5xl">
       <div className="space-y-6">
         <div className="flex flex-col gap-1">

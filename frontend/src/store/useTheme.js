@@ -1,11 +1,12 @@
 import { create } from 'zustand'
 
-const DEFAULT_THEME = "retro";
+const DEFAULT_THEME = "night";
+const LEGACY_DEFAULT_THEME = "retro";
 
 const getInitialTheme = () => {
     const storedTheme = localStorage.getItem("chat-theme");
 
-    if (!storedTheme || storedTheme === "dark") {
+    if (!storedTheme || storedTheme === LEGACY_DEFAULT_THEME) {
         localStorage.setItem("chat-theme", DEFAULT_THEME);
         return DEFAULT_THEME;
     }
