@@ -232,7 +232,7 @@ const Sidebar = () => {
             </button>
           </div>
         ) : (
-          <div className="mt-3 grid grid-cols-4 gap-1.5 text-xs">
+          <div className="mt-3 grid grid-cols-2 gap-1.5 text-xs min-[380px]:grid-cols-4">
             {["all", "groups", "pinned", "online"].map((mode) => (
               <button
                 key={mode}
@@ -264,7 +264,7 @@ const Sidebar = () => {
             placeholder="Group name"
             maxLength={40}
           />
-          <div className="max-h-36 space-y-1 overflow-y-auto">
+          <div className="max-h-[28dvh] space-y-1 overflow-y-auto">
             {friendRequests.friends.map((friend) => (
               <label key={friend._id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-base-200">
                 <input

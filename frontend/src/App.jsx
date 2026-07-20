@@ -39,13 +39,13 @@ function App() {
   }, [authUser, socket, subscribeToMessages, unsubscribeFromMessages]);
 
   if(isCheckingAuth && !authUser) return(
-    <div data-theme={theme} className='flex h-screen items-center justify-center bg-base-100 text-base-content'>
+    <div data-theme={theme} className='flex h-[100dvh] items-center justify-center bg-base-100 text-base-content'>
       <Loader className='animate-spin text-primary' size={42} />
     </div>
   )
 
   return (
-    <div data-theme={theme} className="flex h-screen flex-col overflow-hidden bg-base-100 text-base-content">
+    <div data-theme={theme} className="flex h-[100dvh] flex-col overflow-hidden bg-base-100 text-base-content">
       <Navbar />
       
       <Routes>

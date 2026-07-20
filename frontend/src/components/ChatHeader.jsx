@@ -11,7 +11,7 @@ const ChatHeader = () => {
   const isPinned = !isGroup && pinnedUserIds.includes(selectedUser._id);
 
   return (
-    <div className="flex-shrink-0 border-b border-base-300/70 bg-base-100/95 px-3 py-2">
+    <div className="flex-shrink-0 border-b border-base-300/70 bg-base-100/95 px-2 py-2 sm:px-3">
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <button
@@ -52,7 +52,7 @@ const ChatHeader = () => {
           {!isGroup && (
             <button
               onClick={() => togglePinnedUser(selectedUser._id)}
-              className={`btn btn-ghost btn-sm btn-square flex-shrink-0 rounded-xl ${isPinned ? "text-primary" : ""}`}
+              className={`btn btn-ghost btn-sm btn-square h-9 min-h-9 w-9 flex-shrink-0 rounded-xl ${isPinned ? "text-primary" : ""}`}
               aria-label={isPinned ? "Unpin chat" : "Pin chat"}
               title={isPinned ? "Unpin chat" : "Pin chat"}
             >
@@ -62,7 +62,7 @@ const ChatHeader = () => {
 
           <button
             onClick={() => setSelectedUser(null)}
-            className="hidden lg:flex btn btn-ghost btn-sm btn-square flex-shrink-0 rounded-xl"
+            className="hidden h-9 min-h-9 w-9 flex-shrink-0 rounded-xl btn btn-ghost btn-sm btn-square lg:flex"
             aria-label="Close chat"
           >
             <X className="size-4" />

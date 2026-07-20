@@ -87,7 +87,7 @@ const ChatContainer = () => {
     <div className="flex-1 flex flex-col overflow-hidden bg-base-100">
       <ChatHeader />
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-base-100 px-3 py-4 scroll-smooth sm:px-6">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-base-100 px-2 py-3 scroll-smooth sm:px-6 sm:py-4">
         {messages.length === 0 && (
           <div className="h-full flex items-center justify-center text-center text-base-content/50">
             <div>
@@ -103,7 +103,7 @@ const ChatContainer = () => {
 
           return (
           <div key={message._id} className={`flex ${isMine ? "justify-end" : "justify-start"}`} ref={messageEndRef}>
-            <div className={`group flex max-w-[84%] flex-col sm:max-w-[66%] lg:max-w-[56%] ${isMine ? "items-end" : "items-start"}`}>
+            <div className={`group flex max-w-[92%] flex-col sm:max-w-[66%] lg:max-w-[56%] ${isMine ? "items-end" : "items-start"}`}>
 
               <div className="relative">
                 {isMine && editingMessageId !== message._id && (
@@ -148,7 +148,7 @@ const ChatContainer = () => {
                   )}
 
                   {editingMessageId === message._id ? (
-                    <div className="flex min-w-[14rem] items-end gap-2">
+                    <div className="flex min-w-[min(14rem,78vw)] items-end gap-2">
                       <textarea
                         value={editingText}
                         onChange={(e) => setEditingText(e.target.value)}

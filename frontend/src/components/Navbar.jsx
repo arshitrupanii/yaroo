@@ -78,12 +78,12 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-base-300/60 bg-base-100/85 px-2 py-2 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-base-100/70 sm:px-4">
-      <div className="grid h-12 min-h-12 grid-cols-[2.75rem_minmax(7rem,1fr)_auto] items-center gap-2 sm:gap-3">
+    <header className="sticky top-0 z-40 flex-shrink-0 border-b border-base-300/60 bg-base-100/85 px-2 py-2 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-base-100/70 sm:px-4">
+      <div className="grid h-12 min-h-12 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-1.5 sm:gap-3">
       <div className="flex min-w-0 justify-start">
         <Link
           to="/"
-          className="group inline-flex size-11 items-center justify-center rounded-2xl transition-colors hover:bg-base-200/70"
+          className="group inline-flex size-10 items-center justify-center rounded-xl transition-colors hover:bg-base-200/70 sm:size-11 sm:rounded-2xl"
           aria-label="Yaroo home"
         >
           <BrandLogo size="sm" className="transition-transform duration-200 group-hover:-translate-y-0.5" />
@@ -92,8 +92,8 @@ const Navbar = () => {
 
       <div className="flex min-w-0 justify-center">
         {showSearch && (
-          <label className="flex h-10 min-h-10 w-full max-w-2xl items-center gap-2 rounded-xl border border-base-300/70 bg-base-200/55 px-3 shadow-inner transition-colors focus-within:border-primary focus-within:bg-base-100">
-            <Search className="size-4 flex-shrink-0 text-base-content/45" />
+          <label className="flex h-10 min-h-10 w-full max-w-2xl items-center gap-1.5 rounded-xl border border-base-300/70 bg-base-200/55 px-2 shadow-inner transition-colors focus-within:border-primary focus-within:bg-base-100 sm:gap-2 sm:px-3">
+            <Search className="hidden size-4 flex-shrink-0 text-base-content/45 min-[360px]:block" />
             <input
               type="text"
               autoComplete="off"
@@ -101,7 +101,7 @@ const Navbar = () => {
               onFocus={handleSearchFocus}
               onKeyDown={handleSearchKeyDown}
               onChange={handleSearchChange}
-              placeholder="Search username"
+              placeholder="Search"
               className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-base-content/45"
               aria-label="Search friends by username"
             />
@@ -119,7 +119,7 @@ const Navbar = () => {
         )}
       </div>
 
-      <nav className="flex flex-shrink-0 items-center justify-end gap-1">
+      <nav className="flex min-w-0 flex-shrink-0 items-center justify-end gap-0.5 sm:gap-1">
         {authUser && (
           <div className="hidden items-center gap-1 rounded-xl border border-base-300/60 bg-base-200/50 px-2.5 py-1.5 text-xs text-base-content/70 xl:flex">
             <span className="size-2 rounded-full bg-success shadow-[0_0_0_3px_hsl(var(--su)/0.14)]" />
@@ -133,7 +133,7 @@ const Navbar = () => {
             <button
               type="button"
               tabIndex={0}
-              className="btn btn-ghost btn-sm btn-square rounded-xl"
+              className="btn btn-ghost btn-sm btn-square h-9 min-h-9 w-9 rounded-xl"
               onClick={markNotificationsRead}
               aria-label="Notifications"
               title="Notifications"
@@ -150,7 +150,7 @@ const Navbar = () => {
 
             <div
               tabIndex={0}
-              className="dropdown-content z-50 mt-2 w-80 rounded-lg border border-base-300 bg-base-100 shadow-xl"
+              className="dropdown-content !fixed !left-auto !right-2 !top-16 z-50 mt-0 w-[calc(100vw-1rem)] max-w-80 rounded-lg border border-base-300 bg-base-100 shadow-xl sm:!absolute sm:!right-0 sm:!top-auto sm:mt-2"
             >
               <div className="flex items-center justify-between border-b border-base-300 px-3 py-2">
                 <div className="text-sm font-semibold">Notifications</div>
@@ -202,18 +202,18 @@ const Navbar = () => {
           </div>
         )}
 
-        <Link to="/setting" className="btn btn-ghost btn-sm btn-square rounded-xl" aria-label="Settings" title="Settings">
+        <Link to="/setting" className="btn btn-ghost btn-sm btn-square h-9 min-h-9 w-9 rounded-xl" aria-label="Settings" title="Settings">
           <Settings2 className="size-4" strokeWidth={2.2} />
         </Link>
 
         {authUser && (
           <>
-            <Link to="/profile" className="btn btn-ghost btn-sm h-9 min-h-9 gap-2 rounded-xl px-2" aria-label="Profile" title="Profile">
+            <Link to="/profile" className="btn btn-ghost btn-sm h-9 min-h-9 w-9 gap-0 rounded-xl px-0 sm:w-auto sm:gap-2 sm:px-2" aria-label="Profile" title="Profile">
               <AvatarInitials user={authUser} alt={authUser.firstname} className="size-6" textClassName="text-[10px]" />
               <UserRound className="hidden size-4 sm:block" strokeWidth={2.2} />
             </Link>
 
-            <button className="btn btn-ghost btn-sm btn-square rounded-xl" onClick={handleLogout} aria-label="Logout" title="Logout">
+            <button className="btn btn-ghost btn-sm btn-square h-9 min-h-9 w-9 rounded-xl" onClick={handleLogout} aria-label="Logout" title="Logout">
               <LogOut className="size-4" strokeWidth={2.2} />
             </button>
           </>

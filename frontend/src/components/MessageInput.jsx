@@ -82,7 +82,7 @@ const MessageInput = () => {
   };
 
   return (
-    <div className="sticky bottom-0 z-10 w-full flex-shrink-0 border-t border-base-300/70 bg-base-100/95 p-3">
+    <div className="sticky bottom-0 z-10 w-full flex-shrink-0 border-t border-base-300/70 bg-base-100/95 p-2 sm:p-3">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -104,13 +104,13 @@ const MessageInput = () => {
 
       <form
         onSubmit={handleSendMessage}
-        className="flex items-center gap-2"
+        className="flex items-center gap-1.5 sm:gap-2"
       >
-        <div className="flex min-w-0 flex-1 gap-2">
+        <div className="flex min-w-0 flex-1 gap-1.5 sm:gap-2">
           <input
             ref={textInputRef}
             type="text"
-            className="input input-bordered min-h-11 w-full rounded-xl text-sm"
+            className="input input-bordered min-h-10 w-full rounded-xl text-sm sm:min-h-11"
             placeholder="Type a message..."
             value={text}
             onChange={handleTextChange}
@@ -125,7 +125,7 @@ const MessageInput = () => {
 
           <button
             type="button"
-            className={`btn btn-ghost btn-square flex min-h-11 w-11 flex-shrink-0 rounded-xl
+            className={`btn btn-ghost btn-square flex min-h-10 w-10 flex-shrink-0 rounded-xl sm:min-h-11 sm:w-11
                      ${imagePreview ? "text-success" : "text-base-content/45"}`}
             onClick={() => fileInputRef.current?.click()}
             aria-label="Attach image"
@@ -135,13 +135,13 @@ const MessageInput = () => {
         </div>
 
         {btnLoading ? (
-          <button type="button" className="btn btn-primary btn-square min-h-11 w-11 flex-shrink-0 rounded-xl" disabled aria-label="Sending">
+          <button type="button" className="btn btn-primary btn-square min-h-10 w-10 flex-shrink-0 rounded-xl sm:min-h-11 sm:w-11" disabled aria-label="Sending">
             <Loader className="size-5 animate-spin" />
           </button>
         ) : (
           <button
             type="submit"
-            className="btn btn-primary btn-square min-h-11 w-11 flex-shrink-0 rounded-xl"
+            className="btn btn-primary btn-square min-h-10 w-10 flex-shrink-0 rounded-xl sm:min-h-11 sm:w-11"
             disabled={!text.trim() && !imagePreview}
           >
             <SendHorizontal className="size-5" />
