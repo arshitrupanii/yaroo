@@ -1,6 +1,7 @@
 import { THEMES } from "../constants/theme";
 import { Usethemes } from "../store/useTheme";
 import { Send } from "lucide-react";
+import BrandLogo from "../components/BrandLogo";
 
 const PREVIEW_MESSAGES = [
   { id: 1, content: "Hey! How's it going?", isSent: false },
@@ -19,6 +20,16 @@ const SettingsPage = () => {
           <p className="text-sm text-base-content/70">Choose a theme for your chat interface</p>
         </div>
 
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-base-300 bg-base-200/45 px-4 py-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase text-base-content/55">Active logo</p>
+            <p className="truncate text-sm font-semibold capitalize">{theme}</p>
+          </div>
+          <div className="rounded-2xl bg-base-100 p-2 shadow-sm">
+            <BrandLogo size="md" />
+          </div>
+        </div>
+
         <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-8 gap-2">
           {THEMES.map((t) => (
             <button
@@ -30,6 +41,9 @@ const SettingsPage = () => {
               onClick={() => setTheme(t)}
             >
               <div className="relative h-8 w-full rounded-md overflow-hidden" data-theme={t}>
+                <div className="absolute left-1 top-1 z-10 rounded bg-base-100/80 p-0.5">
+                  <BrandLogo size="xs" />
+                </div>
                 <div className="absolute inset-0 grid grid-cols-4 gap-px p-1">
                   <div className="rounded bg-primary"></div>
                   <div className="rounded bg-secondary"></div>

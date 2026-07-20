@@ -1,6 +1,10 @@
 import PropTypes from "prop-types";
 
 const sizeClasses = {
+  xs: {
+    mark: "size-6",
+    text: "text-xs",
+  },
   sm: {
     mark: "size-9",
     text: "text-[15px]",
@@ -58,7 +62,7 @@ const BrandLogo = ({ showText = false, size = "md", className = "" }) => {
 BrandLogo.propTypes = {
   className: PropTypes.string,
   showText: PropTypes.bool,
-  size: PropTypes.oneOf(["sm", "md"]),
+  size: PropTypes.oneOf(["xs", "sm", "md"]),
 };
 
 export default BrandLogo;

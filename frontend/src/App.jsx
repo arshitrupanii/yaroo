@@ -15,6 +15,7 @@ import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/useAuhstore'
 import { useChatStore } from './store/useChatstore'
 import { Usethemes } from './store/useTheme'
+import { updateThemeBrand } from './lib/themeBrand'
 
 function App() {
   const { authUser, checkAuth, isCheckingAuth, socket } = useAuthStore();
@@ -24,6 +25,10 @@ function App() {
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
+
+  useEffect(() => {
+    updateThemeBrand(theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!authUser || !socket) return undefined;
