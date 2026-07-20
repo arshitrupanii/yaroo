@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { connectDB, disconnectDB } from "../lib/db.js";
 import Message from "../model/message.model.js";
 import User from "../model/user.model.js";
+import Group from "../model/group.model.js";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ async function syncIndexes() {
   await Promise.all([
     User.createIndexes(),
     Message.createIndexes(),
+    Group.createIndexes(),
   ]);
 
   console.log("MongoDB indexes ensured");

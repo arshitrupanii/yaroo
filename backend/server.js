@@ -9,6 +9,7 @@ import path from "path";
 import authRoutes from './routes/auth.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import friendRoutes from './routes/friend.routes.js';
+import groupRoutes from './routes/group.routes.js';
 import { connectDB, disconnectDB, getDbHealth } from './lib/db.js';
 import { app, closeSocketAdapter, configureSocketAdapter, server } from "./lib/socket.js";
 import { requestIdMiddleware } from './middleware/requestId.middleware.js';
@@ -54,6 +55,7 @@ app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/friends', friendRoutes);
+app.use('/api/groups', groupRoutes);
 
 app.get('/health', async (req, res) => {
   const database = getDbHealth();

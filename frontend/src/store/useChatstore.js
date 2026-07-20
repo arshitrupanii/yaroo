@@ -25,7 +25,6 @@ let messageSocketHandlers = null;
 
 const normalizeMessages = (messages) => {
   const messagesById = new Map();
-
   messages.forEach((message) => {
     if (message?._id) messagesById.set(message._id, message);
   });
@@ -37,16 +36,26 @@ const normalizeMessages = (messages) => {
 
 const upsertMessage = (messages, nextMessage) => {
   if (!nextMessage?._id) return messages;
-
   const exists = messages.some((message) => message._id === nextMessage._id);
-
-  if (!exists) {
-    return normalizeMessages([...messages, nextMessage]);
-  }
+  if (!exists) return normalizeMessages([...messages, nextMessage]);
 
   return normalizeMessages(
     messages.map((message) => (message._id === nextMessage._id ? { ...message, ...nextMessage } : message))
   );
+};
+
+const upsertGroup = (groups, nextGroup) => {
+  if (!nextGroup?._id) return groups;
+  const exists = groups.some((group) => group._id === nextGroup._id);
+  const nextGroups = exists
+    ? groups.map((group) => (group._id === nextGroup._id ? { ...group, ...nextGroup } : group))
+    : [nextGroup, ...groups];
+
+  return nextGroups.sort((a, b) => {
+    const aTime = new Date(a.lastMessage?.createdAt || a.updatedAt || 0).getTime();
+    const bTime = new Date(b.lastMessage?.createdAt || b.updatedAt || 0).getTime();
+    return bTime - aTime;
+  });
 };
 
 const isRequestCanceled = (error) => (
@@ -65,27 +74,43 @@ const updateUserUnreadCount = (users, userId, updater) => (
   ))
 );
 
+const updateGroupUnreadCount = (groups, groupId, updater) => (
+  groups.map((group) => (
+    group._id === groupId
+      ? { ...group, unreadCount: Math.max(0, updater(group.unreadCount || 0)) }
+      : group
+  ))
+);
+
 const updateUserLastMessage = (users, userId, lastMessage) => (
-  users.map((user) => (
-    user._id === userId ? { ...user, lastMessage } : user
+  users.map((user) => (user._id === userId ? { ...user, lastMessage } : user))
+);
+
+const updateGroupLastMessage = (groups, groupId, lastMessage) => (
+  groups.map((group) => (group._id === groupId ? { ...group, lastMessage } : group))
+);
+
+const updateLastMessageIfMatching = (items, message) => (
+  items.map((item) => (
+    item.lastMessage?._id === message._id
+      ? { ...item, lastMessage: { ...item.lastMessage, ...message } }
+      : item
   ))
 );
 
-const updateLastMessageIfMatching = (users, message) => (
-  users.map((user) => (
-    user.lastMessage?._id === message._id
-      ? { ...user, lastMessage: { ...user.lastMessage, ...message } }
-      : user
-  ))
+const clearLastMessageIfMatching = (items, messageId) => (
+  items.map((item) => (item.lastMessage?._id === messageId ? { ...item, lastMessage: null } : item))
 );
 
-const clearLastMessageIfMatching = (users, messageId) => (
-  users.map((user) => (
-    user.lastMessage?._id === messageId ? { ...user, lastMessage: null } : user
-  ))
+const getMessageSenderId = (message) => (
+  typeof message?.senderId === "object" ? message.senderId?._id : message?.senderId
 );
 
 const getDisplayName = (user) => user?.firstname || user?.username || "Someone";
+
+const getConversationName = (conversation) => (
+  conversation?.type === "group" ? conversation.name : getDisplayName(conversation)
+);
 
 const getMessagePreview = (message) => {
   if (message?.text?.trim()) return message.text.trim();
@@ -97,21 +122,10 @@ const getFriendNotificationMessage = (payload = {}) => {
   if (payload.silent) return null;
   const name = getDisplayName(payload.from);
 
-  if (payload.type === "friend_request_received") {
-    return `${name} sent you a friend request`;
-  }
-
-  if (payload.type === "friend_request_accepted") {
-    return `${name} accepted your request`;
-  }
-
-  if (payload.type === "friend_request_rejected") {
-    return `${name} declined your request`;
-  }
-
-  if (payload.type === "friend_removed") {
-    return `${name} removed you from friends`;
-  }
+  if (payload.type === "friend_request_received") return `${name} sent you a friend request`;
+  if (payload.type === "friend_request_accepted") return `${name} accepted your request`;
+  if (payload.type === "friend_request_rejected") return `${name} declined your request`;
+  if (payload.type === "friend_removed") return `${name} removed you from friends`;
 
   return null;
 };
@@ -124,6 +138,7 @@ const addNotificationToList = (notifications, notification) => {
 export const useChatStore = create((set, get) => ({
   messages: [],
   users: [],
+  groups: [],
   notifications: [],
   unreadNotificationCount: 0,
   friendRequests: { friends: [], sent: [], received: [] },
@@ -146,26 +161,44 @@ export const useChatStore = create((set, get) => ({
         signal: usersAbortController.signal,
       });
       if (requestId !== usersRequestId) return;
-
       set({ users: res.data });
-
     } catch (error) {
       if (isRequestCanceled(error)) return;
-
       logStoreError("error in get user : ", error);
       toast.error(formatApiError(error, "Could not load users"));
-
     } finally {
       if (requestId === usersRequestId) set({ isUsersLoading: false });
     }
   },
 
+  getGroups: async () => {
+    try {
+      const res = await Axiosinstance.get("/groups");
+      set({ groups: res.data });
+    } catch (error) {
+      logStoreError("error in get groups : ", error);
+      toast.error(formatApiError(error, "Could not load groups"));
+    }
+  },
+
+  createGroup: async ({ name, memberIds }) => {
+    try {
+      const res = await Axiosinstance.post("/groups", { name, memberIds });
+      set({
+        groups: upsertGroup(get().groups, res.data),
+        selectedUser: res.data,
+        messages: [],
+      });
+      toast.success("Group created");
+    } catch (error) {
+      toast.error(formatApiError(error, "Could not create group"));
+      throw error;
+    }
+  },
+
   searchUsers: async (username) => {
     const searchText = username.trim();
-
-    if (!searchText) {
-      return get().getUsers();
-    }
+    if (!searchText) return get().getUsers();
 
     usersAbortController?.abort();
     usersAbortController = new AbortController();
@@ -178,15 +211,11 @@ export const useChatStore = create((set, get) => ({
         signal: usersAbortController.signal,
       });
       if (requestId !== usersRequestId) return;
-
       set({ users: res.data });
-
     } catch (error) {
       if (isRequestCanceled(error)) return;
-
       logStoreError("error in search user : ", error);
       toast.error(formatApiError(error, "Could not search users"));
-
     } finally {
       if (requestId === usersRequestId) set({ isUsersLoading: false });
     }
@@ -234,20 +263,21 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  getMessages: async (userId) => {
+  getMessages: async (conversationId) => {
+    const { selectedUser } = get();
+    const isGroup = selectedUser?.type === "group";
     set({ isMessagesLoading: true });
 
     try {
-      const res = await Axiosinstance.get(`/messages/${userId}`);
+      const res = await Axiosinstance.get(isGroup ? `/groups/${conversationId}/messages` : `/messages/${conversationId}`);
       set({
         messages: normalizeMessages(res.data),
-        users: updateUserUnreadCount(get().users, userId, () => 0),
+        users: isGroup ? get().users : updateUserUnreadCount(get().users, conversationId, () => 0),
+        groups: isGroup ? updateGroupUnreadCount(get().groups, conversationId, () => 0) : get().groups,
       });
-
     } catch (error) {
       logStoreError("error in get message : ", error);
       toast.error(formatApiError(error, "Could not load messages"));
-
     } finally {
       set({ isMessagesLoading: false });
     }
@@ -261,17 +291,30 @@ export const useChatStore = create((set, get) => ({
       logStoreError("error in mark messages seen : ", error);
     }
   },
-  
+
+  markGroupMessagesSeen: async (groupId) => {
+    try {
+      await Axiosinstance.patch(`/groups/${groupId}/seen`);
+      set({ groups: updateGroupUnreadCount(get().groups, groupId, () => 0) });
+    } catch (error) {
+      logStoreError("error in mark group messages seen : ", error);
+    }
+  },
+
   sendMessage: async (messageData) => {
     const { selectedUser } = get();
+    const isGroup = selectedUser?.type === "group";
 
     try {
-      const res = await Axiosinstance.post(`/messages/send/${selectedUser._id}`, messageData);
+      const res = await Axiosinstance.post(
+        isGroup ? `/messages/group/${selectedUser._id}/send` : `/messages/send/${selectedUser._id}`,
+        messageData
+      );
       set({
         messages: upsertMessage(get().messages, res.data),
-        users: updateUserLastMessage(get().users, selectedUser._id, res.data),
+        users: isGroup ? get().users : updateUserLastMessage(get().users, selectedUser._id, res.data),
+        groups: isGroup ? updateGroupLastMessage(get().groups, selectedUser._id, res.data) : get().groups,
       });
-
     } catch (error) {
       logStoreError("error in send message : ", error);
       toast.error(formatApiError(error, "Could not send message"));
@@ -283,10 +326,9 @@ export const useChatStore = create((set, get) => ({
     try {
       const res = await Axiosinstance.put(`/messages/${messageId}`, { text });
       set({
-        messages: get().messages.map((message) => (
-          message._id === messageId ? res.data : message
-        )),
+        messages: get().messages.map((message) => (message._id === messageId ? res.data : message)),
         users: updateLastMessageIfMatching(get().users, res.data),
+        groups: updateLastMessageIfMatching(get().groups, res.data),
       });
     } catch (error) {
       toast.error(formatApiError(error, "Could not edit message"));
@@ -299,8 +341,10 @@ export const useChatStore = create((set, get) => ({
       set({
         messages: get().messages.filter((message) => message._id !== messageId),
         users: clearLastMessageIfMatching(get().users, messageId),
+        groups: clearLastMessageIfMatching(get().groups, messageId),
       });
       await get().getUsers();
+      await get().getGroups();
     } catch (error) {
       toast.error(formatApiError(error, "Could not delete message"));
     }
@@ -309,12 +353,14 @@ export const useChatStore = create((set, get) => ({
   emitTyping: () => {
     const { selectedUser } = get();
     const socket = useAuthStore.getState().socket;
+    if (selectedUser?.type === "group") return;
     if (selectedUser && socket) socket.emit("typing", { receiverId: selectedUser._id });
   },
 
   emitStopTyping: () => {
     const { selectedUser } = get();
     const socket = useAuthStore.getState().socket;
+    if (selectedUser?.type === "group") return;
     if (selectedUser && socket) socket.emit("stopTyping", { receiverId: selectedUser._id });
   },
 
@@ -327,9 +373,7 @@ export const useChatStore = create((set, get) => ({
       const { selectedUser } = get();
       const isMessageSentFromSelectedUser = newMessage.senderId === selectedUser?._id;
 
-      if (typeof ack === "function") {
-        ack({ received: true, messageId: newMessage._id });
-      }
+      if (typeof ack === "function") ack({ received: true, messageId: newMessage._id });
 
       if (!isMessageSentFromSelectedUser) {
         const sender = newMessage.sender || get().users.find((user) => user._id === newMessage.senderId);
@@ -355,9 +399,7 @@ export const useChatStore = create((set, get) => ({
             : state.unreadNotificationCount + 1,
         }));
 
-        toast(`${getDisplayName(sender)}: ${getMessagePreview(newMessage)}`, {
-          id: `message-${newMessage._id}`,
-        });
+        toast(`${getDisplayName(sender)}: ${getMessagePreview(newMessage)}`, { id: `message-${newMessage._id}` });
         return;
       }
 
@@ -372,12 +414,72 @@ export const useChatStore = create((set, get) => ({
       get().markMessagesSeen(newMessage.senderId);
     };
 
+    const handleNewGroupMessage = (newMessage) => {
+      const { selectedUser } = get();
+      const authUserId = useAuthStore.getState().authUser?._id;
+      const groupId = newMessage.groupId;
+      const senderId = getMessageSenderId(newMessage);
+      const isSelectedGroup = selectedUser?.type === "group" && selectedUser._id === groupId;
+      const sender = typeof newMessage.senderId === "object" ? newMessage.senderId : null;
+
+      if (senderId === authUserId) {
+        set({
+          messages: isSelectedGroup ? upsertMessage(get().messages, newMessage) : get().messages,
+          groups: updateGroupLastMessage(get().groups, groupId, newMessage),
+        });
+        return;
+      }
+
+      if (isSelectedGroup) {
+        set({
+          messages: upsertMessage(get().messages, newMessage),
+          groups: updateGroupLastMessage(updateGroupUnreadCount(get().groups, groupId, () => 0), groupId, newMessage),
+        });
+        get().markGroupMessagesSeen(groupId);
+        return;
+      }
+
+      const group = get().groups.find((item) => item._id === groupId) || newMessage.group;
+      const notification = {
+        id: `group-message-${newMessage._id}`,
+        type: "message",
+        title: getConversationName(group),
+        body: `${getDisplayName(sender)}: ${getMessagePreview(newMessage)}`,
+        userId: groupId,
+        conversationType: "group",
+        createdAt: newMessage.createdAt || new Date().toISOString(),
+        read: false,
+      };
+
+      set((state) => ({
+        groups: updateGroupLastMessage(
+          updateGroupUnreadCount(state.groups, groupId, (count) => count + 1),
+          groupId,
+          newMessage
+        ),
+        notifications: addNotificationToList(state.notifications, notification),
+        unreadNotificationCount: state.notifications.some((item) => item.id === notification.id && !item.read)
+          ? state.unreadNotificationCount
+          : state.unreadNotificationCount + 1,
+      }));
+
+      toast(`${getConversationName(group)}: ${getMessagePreview(newMessage)}`, {
+        id: `group-message-${newMessage._id}`,
+      });
+    };
+
+    const handleGroupUpdated = (group) => {
+      set({ groups: upsertGroup(get().groups, group) });
+    };
+
     const handleMessageUpdated = (updatedMessage) => {
       const { selectedUser } = get();
       const authUserId = useAuthStore.getState().authUser?._id;
+      const senderId = getMessageSenderId(updatedMessage);
       const belongsToSelectedConversation = selectedUser && (
-        (updatedMessage.senderId === selectedUser._id && updatedMessage.receiverId === authUserId)
-        || (updatedMessage.senderId === authUserId && updatedMessage.receiverId === selectedUser._id)
+        (selectedUser.type === "group" && updatedMessage.groupId === selectedUser._id)
+        || (senderId === selectedUser._id && updatedMessage.receiverId === authUserId)
+        || (senderId === authUserId && updatedMessage.receiverId === selectedUser._id)
       );
       const alreadyVisible = get().messages.some((message) => message._id === updatedMessage._id);
 
@@ -386,19 +488,21 @@ export const useChatStore = create((set, get) => ({
       set({
         messages: upsertMessage(get().messages, updatedMessage),
         users: updateLastMessageIfMatching(get().users, updatedMessage),
+        groups: updateLastMessageIfMatching(get().groups, updatedMessage),
       });
     };
 
-    const handleMessageDeleted = ({ _id, senderId, status }) => {
+    const handleMessageDeleted = ({ _id, senderId, groupId, status }) => {
       const messageWasVisible = get().messages.some((message) => message._id === _id);
       const selectedUserId = get().selectedUser?._id;
       const shouldClearUnread = !messageWasVisible && status !== "seen" && senderId && senderId !== selectedUserId;
 
       set({
         messages: get().messages.filter((message) => message._id !== _id),
-        users: shouldClearUnread
+        users: groupId ? get().users : shouldClearUnread
           ? clearLastMessageIfMatching(updateUserUnreadCount(get().users, senderId, (count) => count - 1), _id)
           : clearLastMessageIfMatching(get().users, _id),
+        groups: groupId ? clearLastMessageIfMatching(get().groups, _id) : get().groups,
       });
     };
 
@@ -443,11 +547,8 @@ export const useChatStore = create((set, get) => ({
             : state.unreadNotificationCount + 1,
         }));
 
-        if (payload.type === "friend_request_accepted") {
-          toast.success(message);
-        } else {
-          toast(message);
-        }
+        if (payload.type === "friend_request_accepted") toast.success(message);
+        else toast(message);
       }
 
       await get().getFriendRequests();
@@ -459,11 +560,14 @@ export const useChatStore = create((set, get) => ({
       if (selectedUser?._id) get().getMessages(selectedUser._id);
       get().getFriendRequests();
       get().getUsers();
+      get().getGroups();
     };
 
     messageSocketHandlers = {
       socket,
       handleNewMessage,
+      handleNewGroupMessage,
+      handleGroupUpdated,
       handleMessageUpdated,
       handleMessageDeleted,
       handleMessagesSeen,
@@ -474,6 +578,8 @@ export const useChatStore = create((set, get) => ({
     };
 
     socket.on("newMessage", handleNewMessage);
+    socket.on("newGroupMessage", handleNewGroupMessage);
+    socket.on("groupUpdated", handleGroupUpdated);
     socket.on("messageUpdated", handleMessageUpdated);
     socket.on("messageDeleted", handleMessageDeleted);
     socket.on("messagesSeen", handleMessagesSeen);
@@ -488,6 +594,8 @@ export const useChatStore = create((set, get) => ({
     if (!handlers?.socket) return;
 
     handlers.socket.off("newMessage", handlers.handleNewMessage);
+    handlers.socket.off("newGroupMessage", handlers.handleNewGroupMessage);
+    handlers.socket.off("groupUpdated", handlers.handleGroupUpdated);
     handlers.socket.off("messageUpdated", handlers.handleMessageUpdated);
     handlers.socket.off("messageDeleted", handlers.handleMessageDeleted);
     handlers.socket.off("messagesSeen", handlers.handleMessagesSeen);
@@ -519,8 +627,11 @@ export const useChatStore = create((set, get) => ({
 
   setSelectedUser: (selectedUser) => set({
     selectedUser,
-    users: selectedUser
+    users: selectedUser && selectedUser.type !== "group"
       ? updateUserUnreadCount(get().users, selectedUser._id, () => 0)
       : get().users,
+    groups: selectedUser?.type === "group"
+      ? updateGroupUnreadCount(get().groups, selectedUser._id, () => 0)
+      : get().groups,
   }),
 }));

@@ -23,6 +23,18 @@ const ChatContainer = () => {
 
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
+  const isGroup = selectedUser.type === "group";
+
+  const getSenderId = (message) => (
+    typeof message.senderId === "object" ? message.senderId?._id : message.senderId
+  );
+
+  const getSenderName = (message) => (
+    typeof message.senderId === "object"
+      ? message.senderId.firstname || message.senderId.username
+      : ""
+  );
+
   useEffect(() => {
     if (messageEndRef.current && messages) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -47,7 +59,7 @@ const ChatContainer = () => {
   };
 
   const renderStatus = (message) => {
-    if (message.senderId !== authUser._id) return null;
+    if (isGroup || getSenderId(message) !== authUser._id) return null;
 
     if (message.status === "seen") {
       return <span className="inline-flex items-center gap-1 text-[11px] opacity-70"><CheckCheck className="size-3" />Seen</span>;
@@ -80,13 +92,14 @@ const ChatContainer = () => {
           <div className="h-full flex items-center justify-center text-center text-base-content/50">
             <div>
               <div className="font-medium text-base-content">No messages yet</div>
-              <p className="text-sm mt-1">Start the conversation with {selectedUser.firstname}.</p>
+              <p className="text-sm mt-1">Start the conversation with {isGroup ? selectedUser.name : selectedUser.firstname}.</p>
             </div>
           </div>
         )}
 
         {messages.map((message) => {
-          const isMine = message.senderId === authUser._id;
+          const isMine = getSenderId(message) === authUser._id;
+          const senderName = getSenderName(message);
 
           return (
           <div key={message._id} className={`flex ${isMine ? "justify-end" : "justify-start"}`} ref={messageEndRef}>
@@ -113,6 +126,11 @@ const ChatContainer = () => {
                       : "rounded-bl-md border border-base-300/70 bg-base-200 text-base-content"
                   }`}
                 >
+                  {isGroup && !isMine && senderName && (
+                    <div className="mb-1 text-[11px] font-semibold text-primary">
+                      {senderName}
+                    </div>
+                  )}
                   {message.image && (
                     <button
                       type="button"

@@ -11,6 +11,7 @@ const Navbar = () => {
     clearNotifications,
     markNotificationsRead,
     notifications,
+    groups,
     setSelectedUser,
     setUserSearchText,
     unreadNotificationCount,
@@ -57,9 +58,12 @@ const Navbar = () => {
     markNotificationsRead();
 
     if (notification.type === "message" && notification.userId) {
-      const user = users.find((item) => item._id === notification.userId);
-      if (user) {
-        setSelectedUser(user);
+      const conversation = notification.conversationType === "group"
+        ? groups.find((item) => item._id === notification.userId)
+        : users.find((item) => item._id === notification.userId);
+
+      if (conversation) {
+        setSelectedUser(conversation);
         setUserSearchText("");
         if (location.pathname !== "/") navigate("/");
       }

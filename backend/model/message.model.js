@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const messageSchema = new mongoose.Schema({
     senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    receiverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    receiverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group' },
     text: { type: String },
     image: { type: String },
     status: {
@@ -11,6 +12,7 @@ const messageSchema = new mongoose.Schema({
         default: 'sent'
     },
     readAt: { type: Date },
+    readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     editedAt: { type: Date },
     deletedAt: { type: Date },
     deletedFor: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -19,6 +21,8 @@ const messageSchema = new mongoose.Schema({
 
 messageSchema.index({ senderId: 1, receiverId: 1, createdAt: 1 });
 messageSchema.index({ receiverId: 1, senderId: 1, status: 1 });
+messageSchema.index({ groupId: 1, createdAt: 1 });
+messageSchema.index({ groupId: 1, readBy: 1 });
 messageSchema.index({ deletedFor: 1 });
 messageSchema.index({ deletedAt: 1 });
 

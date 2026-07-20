@@ -1,10 +1,12 @@
 import User from '../model/user.model.js';
 import Message from '../model/message.model.js';
+import Group from '../model/group.model.js';
 import cloudinary from '../lib/cloudinary.js';
 import { emitToUser, emitToUsers, emitToUserWithAck } from "../lib/socket.js";
 import { ApiError } from '../lib/ApiError.js';
 
 const userFields = "-password -createdAt -updatedAt -friendRequestsSent -friendRequestsReceived";
+const publicUserFields = "_id firstname username email profilePicture";
 
 const toPublicUser = (user) => ({
     _id: user._id,
@@ -50,6 +52,8 @@ const emitMessageWithDeliveryAck = (message, sender) => {
         }
     });
 };
+
+const getMemberIds = (group) => group.members.map((memberId) => memberId.toString());
 
 const markConversationMessagesSeen = async (viewerId, senderId) => {
     const seenUpdate = await Message.updateMany(
@@ -245,6 +249,58 @@ export const sendMessage = async (req, res) => {
     return res.status(201).json(newMessage);
 };
 
+export const sendGroupMessage = async (req, res) => {
+    const { text, image } = req.body;
+    const { id: groupId } = req.params;
+    const senderId = req.user._id;
+
+    const group = await Group.findById(groupId).select('members name updatedAt');
+    if (!group) throw new ApiError(404, 'Group not found', { code: 'GROUP_NOT_FOUND' });
+
+    const memberIds = getMemberIds(group);
+    if (!memberIds.includes(senderId.toString())) {
+        throw new ApiError(403, 'You are not in this group', { code: 'GROUP_FORBIDDEN' });
+    }
+
+    if (!text && !image) {
+        throw new ApiError(400, 'Text or image is required', { code: 'VALIDATION_ERROR' });
+    }
+
+    let imageUrl;
+
+    if (image) {
+        const uploadResponse = await cloudinary.uploader.upload(image, {
+            folder: "uploads/groups",
+            quality: "auto:eco",
+            fetch_format: "auto",
+            width: 1600,
+            crop: "limit"
+        });
+
+        imageUrl = uploadResponse.secure_url;
+    }
+
+    const newMessage = await Message.create({
+        senderId,
+        groupId,
+        text,
+        image: imageUrl,
+        status: 'sent',
+        readBy: [senderId]
+    });
+
+    await Group.findByIdAndUpdate(groupId, { updatedAt: new Date() });
+    const populatedMessage = await Message.findById(newMessage._id).populate("senderId", publicUserFields);
+    const payload = {
+        ...populatedMessage.toObject(),
+        group: { _id: group._id, name: group.name, members: group.members },
+    };
+
+    emitToUsers(memberIds, "newGroupMessage", payload);
+
+    return res.status(201).json(populatedMessage);
+};
+
 export const editMessage = async (req, res) => {
     const { id } = req.params;
     const { text } = req.body;
@@ -264,7 +320,12 @@ export const editMessage = async (req, res) => {
     message.editedAt = new Date();
     await message.save();
 
-    emitToUser(message.receiverId, "messageUpdated", message);
+    if (message.groupId) {
+        const group = await Group.findById(message.groupId).select("members");
+        if (group) emitToUsers(group.members, "messageUpdated", message);
+    } else {
+        emitToUser(message.receiverId, "messageUpdated", message);
+    }
 
     return res.status(200).json(message);
 };
@@ -275,11 +336,18 @@ export const deleteMessage = async (req, res) => {
 
     const message = await Message.findOne({
         _id: id,
-        $or: [{ senderId: userId }, { receiverId: userId }]
+        $or: [{ senderId: userId }, { receiverId: userId }, { groupId: { $exists: true } }]
     });
 
     if (!message) {
         throw new ApiError(404, 'Message not found', { code: 'MESSAGE_NOT_FOUND' });
+    }
+
+    if (message.groupId) {
+        const group = await Group.findById(message.groupId).select("members");
+        if (!group?.members.some((memberId) => memberId.toString() === userId.toString())) {
+            throw new ApiError(403, 'You are not in this group', { code: 'GROUP_FORBIDDEN' });
+        }
     }
 
     if (message.senderId.toString() === userId.toString()) {
@@ -287,12 +355,20 @@ export const deleteMessage = async (req, res) => {
         message.text = '';
         message.image = '';
 
-        emitToUser(message.receiverId, "messageDeleted", {
+        const payload = {
             _id: message._id,
             senderId: message.senderId,
             receiverId: message.receiverId,
+            groupId: message.groupId,
             status: message.status
-        });
+        };
+
+        if (message.groupId) {
+            const group = await Group.findById(message.groupId).select("members");
+            if (group) emitToUsers(group.members, "messageDeleted", payload);
+        } else {
+            emitToUser(message.receiverId, "messageDeleted", payload);
+        }
     } else {
         message.deletedFor.addToSet(userId);
     }
