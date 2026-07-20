@@ -8,18 +8,14 @@ const HomePage = () => {
   const { selectedUser } = useChatStore();
 
   return (
-    <main className="h-[calc(100vh-4rem)] overflow-hidden bg-base-100">
-      <div className="flex h-full min-h-0">
-        <div className="w-full min-w-0">
-          <div className="flex h-full min-h-0">
-            <div className={`${selectedUser ? 'hidden lg:block' : 'block w-full'} h-full min-h-0 lg:w-auto lg:flex-shrink-0`}>
-              <Sidebar />
-            </div>
+    <main className="min-h-0 flex-1 overflow-hidden bg-base-100">
+      <div className="flex h-full min-h-0 w-full min-w-0">
+        <div className={`${selectedUser ? 'hidden lg:block' : 'block w-full'} h-full min-h-0 lg:w-auto lg:flex-shrink-0`}>
+          <Sidebar />
+        </div>
 
-            <div className={`${!selectedUser ? 'hidden lg:flex' : 'flex'} min-h-0 flex-1 flex-col min-w-0`}>
-              {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
-            </div>
-          </div>
+        <div className={`${!selectedUser ? 'hidden lg:flex' : 'flex'} min-h-0 min-w-0 flex-1 flex-col`}>
+          {!selectedUser ? <NoChatSelected /> : <ChatContainer />}
         </div>
       </div>
     </main>
