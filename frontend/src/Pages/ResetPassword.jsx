@@ -4,13 +4,8 @@ import toast from "react-hot-toast";
 import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import { useAuthStore } from "../store/useAuhstore";
 import BrandLogo from "../components/BrandLogo";
-
-const isStrongPassword = (password) => (
-  password.length >= 8 &&
-  /[a-z]/.test(password) &&
-  /[A-Z]/.test(password) &&
-  /\d/.test(password)
-);
+import PasswordChecklist from "../components/PasswordChecklist";
+import { isStrongPassword } from "../lib/authValidation";
 
 const ResetPassword = () => {
   const { token } = useParams();
@@ -45,7 +40,7 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-base-100 flex items-center justify-center px-4 py-8">
+    <div className="min-h-[calc(100dvh-4rem)] bg-base-100 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md p-2 sm:p-4">
         <div className="w-full space-y-7">
           <div className="text-center mb-8">
@@ -68,7 +63,8 @@ const ResetPassword = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   className="input input-bordered w-full pl-10 pr-10"
-                  placeholder="••••••••"
+                  placeholder="Password"
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
@@ -85,6 +81,9 @@ const ResetPassword = () => {
                   )}
                 </button>
               </div>
+              <div className="mt-3">
+                <PasswordChecklist password={formData.password} />
+              </div>
             </div>
 
             <div className="form-control">
@@ -98,7 +97,8 @@ const ResetPassword = () => {
                 <input
                   type={showPassword ? "text" : "password"}
                   className="input input-bordered w-full pl-10"
-                  placeholder="••••••••"
+                  placeholder="Confirm password"
+                  autoComplete="new-password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 />

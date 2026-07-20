@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
 import { useAuthStore } from "../store/useAuhstore";
 import BrandLogo from "../components/BrandLogo";
+import { isValidEmail, normalizeEmail } from "../lib/authValidation";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -14,14 +15,14 @@ const ForgotPassword = () => {
     e.preventDefault();
 
     if (!email.trim()) return toast.error("Enter your email.");
-    if (!/\S+@\S+\.\S+/.test(email)) return toast.error("Enter a valid email.");
+    if (!isValidEmail(email)) return toast.error("Enter a valid email.");
 
-    const result = await forgotPassword(email);
+    const result = await forgotPassword(normalizeEmail(email));
     if (result?.resetUrl) setResetUrl(result.resetUrl);
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-base-100 flex items-center justify-center px-4 py-8">
+    <div className="min-h-[calc(100dvh-4rem)] bg-base-100 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md p-2 sm:p-4">
         <div className="w-full space-y-7">
           <div className="text-center mb-8">
@@ -45,6 +46,8 @@ const ForgotPassword = () => {
                   type="email"
                   className="input input-bordered w-full pl-10"
                   placeholder="you@example.com"
+                  autoComplete="email"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />

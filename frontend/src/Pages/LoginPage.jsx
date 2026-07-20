@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 import BrandLogo from "../components/BrandLogo";
+import { isValidEmail, normalizeEmail } from "../lib/authValidation";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,8 +16,7 @@ const LoginPage = () => {
 
   const validateForm = () => {
     if (!formData.email.trim()) return toast.error("Enter your email.");
-    if (!/\S+@\S+\.\S+/.test(formData.email))
-      return toast.error("Enter a valid email.");
+    if (!isValidEmail(formData.email)) return toast.error("Enter a valid email.");
     if (!formData.password) return toast.error("Enter your password.");
 
     return true;
@@ -25,11 +25,16 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = validateForm();
-    if (success === true) await login(formData);
+    if (success === true) {
+      await login({
+        email: normalizeEmail(formData.email),
+        password: formData.password,
+      });
+    }
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-base-100 flex items-center justify-center px-4 py-8">
+    <div className="min-h-[calc(100dvh-4rem)] bg-base-100 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md p-2 sm:p-4">
         <div className="w-full space-y-7">
           <div className="text-center mb-8">
@@ -53,6 +58,8 @@ const LoginPage = () => {
                   type="email"
                   className={`input input-bordered w-full pl-10`}
                   placeholder="you@example.com"
+                  autoComplete="email"
+                  inputMode="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
@@ -69,8 +76,9 @@ const LoginPage = () => {
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
-                  className={`input input-bordered w-full pl-10`}
-                  placeholder="••••••••"
+                  className={`input input-bordered w-full pl-10 pr-10`}
+                  placeholder="Password"
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
@@ -78,6 +86,7 @@ const LoginPage = () => {
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5 text-base-content/40" />
