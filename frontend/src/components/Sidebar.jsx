@@ -232,16 +232,16 @@ const Sidebar = () => {
             </button>
           </div>
         ) : (
-          <div className="mt-3 flex items-center gap-1.5 overflow-x-auto text-xs">
+          <div className="mt-3 grid grid-cols-4 gap-1.5 text-xs">
             {["all", "groups", "pinned", "online"].map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setFilterMode(mode)}
-                className={`btn btn-xs h-7 min-h-7 rounded-full px-3 capitalize ${filterMode === mode ? "btn-primary" : "btn-ghost text-base-content/70"}`}
+                className={`btn btn-xs h-7 min-h-7 w-full rounded-full px-1.5 capitalize ${filterMode === mode ? "btn-primary" : "btn-ghost text-base-content/70"}`}
               >
                 {mode === "pinned" && <Pin className="size-3" />}
-                {mode}
+                <span className="truncate">{mode}</span>
               </button>
             ))}
           </div>
