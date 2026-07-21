@@ -56,6 +56,10 @@ const MessageInput = () => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
 
+    // Keep the input focused throughout the send. On mobile, moving focus to the
+    // submit button and restoring it after the request makes the keyboard flicker.
+    textInputRef.current?.focus({ preventScroll: true });
+
     try {
       setbtnLoading(true);
 
@@ -69,23 +73,15 @@ const MessageInput = () => {
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       
-      // Refocus input to keep keyboard open on mobile
-      setTimeout(() => {
-        textInputRef.current?.focus();
-      }, 100);
     } catch (error) {
       console.error("Failed to send message:", error);
-      // Still refocus even on error
-      setTimeout(() => {
-        textInputRef.current?.focus();
-      }, 100);
     } finally {
       setbtnLoading(false);
     }
   };
 
   return (
-    <div className="sticky bottom-0 z-10 w-full flex-shrink-0 border-t border-base-300/70 bg-base-100/95 p-3">
+    <div className="sticky bottom-0 z-10 w-full flex-shrink-0 border-t border-base-300/70 bg-base-100/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -144,8 +140,10 @@ const MessageInput = () => {
         ) : (
           <button
             type="submit"
+            onPointerDown={(event) => event.preventDefault()}
             className="btn btn-primary btn-square min-h-11 w-11 flex-shrink-0 rounded-xl"
             disabled={!text.trim() && !imagePreview}
+            aria-label="Send message"
           >
             <SendHorizontal className="size-5" />
           </button>

@@ -23,6 +23,22 @@ function App() {
     checkAuth()
   }, [checkAuth])
 
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+      document.documentElement.style.setProperty('--app-height', `${viewportHeight}px`)
+    }
+
+    updateViewportHeight()
+    window.addEventListener('resize', updateViewportHeight)
+    window.visualViewport?.addEventListener('resize', updateViewportHeight)
+
+    return () => {
+      window.removeEventListener('resize', updateViewportHeight)
+      window.visualViewport?.removeEventListener('resize', updateViewportHeight)
+    }
+  }, [])
+
   if(isCheckingAuth && !authUser) return(
     <div data-theme={theme} className='flex h-screen items-center justify-center bg-base-100 text-base-content'>
       <Loader className='animate-spin text-primary' size={42} />
@@ -30,7 +46,7 @@ function App() {
   )
 
   return (
-    <div data-theme={theme} className="min-h-screen bg-base-100 text-base-content">
+    <div data-theme={theme} className="min-h-[var(--app-height)] bg-base-100 text-base-content">
       <Navbar />
       
       <Routes>

@@ -5,7 +5,7 @@ import { LogOut, MessageCircleMore, Search, Settings2, UserRound, X } from "luci
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
-  const { setSelectedUser, setUserSearchText, userSearchText } = useChatStore();
+  const { selectedUser, setSelectedUser, setUserSearchText, userSearchText } = useChatStore();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -49,7 +49,7 @@ const Navbar = () => {
   };
 
   return (
-    <header className="grid h-14 min-h-14 grid-cols-[auto_minmax(8rem,1fr)_auto] items-center gap-2 border-b border-base-300/70 bg-base-100/90 px-2 backdrop-blur supports-[backdrop-filter]:bg-base-100/75 sm:gap-3 sm:px-4">
+    <header className={`${location.pathname === "/" && selectedUser ? "hidden lg:grid" : "grid"} h-14 min-h-14 grid-cols-[auto_minmax(8rem,1fr)_auto] items-center gap-2 border-b border-base-300/70 bg-base-100/90 px-2 backdrop-blur supports-[backdrop-filter]:bg-base-100/75 sm:gap-3 sm:px-4`}>
       <div className="min-w-0">
         <Link to="/" className="group flex min-w-0 items-center gap-2" aria-label="Yaroo home">
           <span className="relative flex size-9 flex-shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary text-primary-content shadow-sm transition-transform duration-200 group-hover:-translate-y-0.5">

@@ -3,12 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --app-height: 100dvh;
+  }
+
   html {
     scroll-behavior: smooth;
+    height: 100%;
   }
 
   body {
     @apply bg-base-100 text-base-content antialiased;
+    min-height: 100%;
+    overflow-x: hidden;
   }
 
   button,
