@@ -330,8 +330,10 @@ export const useChatStore = create((set, get) => ({
         users: updateLastMessageIfMatching(get().users, res.data),
         groups: updateLastMessageIfMatching(get().groups, res.data),
       });
+      return true;
     } catch (error) {
       toast.error(formatApiError(error, "Could not edit message"));
+      return false;
     }
   },
 
@@ -345,8 +347,10 @@ export const useChatStore = create((set, get) => ({
       });
       await get().getUsers();
       await get().getGroups();
+      return true;
     } catch (error) {
       toast.error(formatApiError(error, "Could not delete message"));
+      return false;
     }
   },
 

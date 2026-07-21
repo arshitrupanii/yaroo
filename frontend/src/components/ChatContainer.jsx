@@ -6,11 +6,16 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuhstore.js";
 import { formatMessageTime } from "../lib/utils";
-import { Check, CheckCheck, Pencil, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, CheckCheck, Loader, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 
 const ChatContainer = () => {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingText, setEditingText] = useState("");
+  const [originalEditingText, setOriginalEditingText] = useState("");
+  const [activeActionsMessageId, setActiveActionsMessageId] = useState(null);
+  const [messageToDelete, setMessageToDelete] = useState(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const {
     deleteMessage,
@@ -23,6 +28,7 @@ const ChatContainer = () => {
 
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
+  const editInputRef = useRef(null);
   const isGroup = selectedUser.type === "group";
 
   const getSenderId = (message) => (
@@ -44,18 +50,44 @@ const ChatContainer = () => {
   const startEditing = (message) => {
     setEditingMessageId(message._id);
     setEditingText(message.text || "");
+    setOriginalEditingText(message.text || "");
+    setActiveActionsMessageId(null);
   };
 
+  useEffect(() => {
+    if (!editingMessageId || !editInputRef.current) return;
+
+    const input = editInputRef.current;
+    const cursorPosition = input.value.length;
+    input.focus({ preventScroll: true });
+    input.setSelectionRange(cursorPosition, cursorPosition);
+  }, [editingMessageId]);
+
   const saveEdit = async () => {
-    if (!editingText.trim()) return;
-    await editMessage(editingMessageId, editingText.trim());
-    setEditingMessageId(null);
-    setEditingText("");
+    const nextText = editingText.trim();
+    if (!nextText || nextText === originalEditingText.trim() || isSavingEdit) return;
+
+    setIsSavingEdit(true);
+    const didSave = await editMessage(editingMessageId, nextText);
+    setIsSavingEdit(false);
+
+    if (didSave) cancelEdit();
   };
 
   const cancelEdit = () => {
     setEditingMessageId(null);
     setEditingText("");
+    setOriginalEditingText("");
+  };
+
+  const confirmDelete = async () => {
+    if (!messageToDelete || isDeleting) return;
+
+    setIsDeleting(true);
+    const didDelete = await deleteMessage(messageToDelete._id);
+    setIsDeleting(false);
+
+    if (didDelete) setMessageToDelete(null);
   };
 
   const renderStatus = (message) => {
@@ -107,15 +139,36 @@ const ChatContainer = () => {
 
               <div className="relative">
                 {isMine && editingMessageId !== message._id && (
-                  <div className="absolute -top-8 right-0 flex gap-1 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:focus-within:opacity-100">
-                    {message.text && (
-                      <button onClick={() => startEditing(message)} className="btn btn-xs btn-circle" aria-label="Edit message">
-                        <Pencil className="size-3" />
-                      </button>
-                    )}
-                    <button onClick={() => deleteMessage(message._id)} className="btn btn-xs btn-circle" aria-label="Delete message">
-                      <Trash2 className="size-3" />
+                  <div className="absolute -left-9 top-1/2 z-20 -translate-y-1/2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveActionsMessageId((current) => current === message._id ? null : message._id)}
+                      className="btn btn-ghost btn-xs btn-circle text-base-content/50 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                      aria-label="Message actions"
+                      aria-expanded={activeActionsMessageId === message._id}
+                    >
+                      <MoreHorizontal className="size-4" />
                     </button>
+
+                    {activeActionsMessageId === message._id && (
+                      <div className="absolute bottom-full right-0 mb-1 w-32 overflow-hidden rounded-xl border border-base-300 bg-base-100 p-1 shadow-xl">
+                        {message.text && (
+                          <button type="button" onClick={() => startEditing(message)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-base-200">
+                            <Pencil className="size-3.5" /> Edit
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMessageToDelete(message);
+                            setActiveActionsMessageId(null);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-error hover:bg-error/10"
+                        >
+                          <Trash2 className="size-3.5" /> Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -150,25 +203,33 @@ const ChatContainer = () => {
                   {editingMessageId === message._id ? (
                     <div className="flex min-w-[min(14rem,78vw)] items-end gap-2">
                       <textarea
+                        ref={editInputRef}
                         value={editingText}
                         onChange={(e) => setEditingText(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
-                            saveEdit();
+                            void saveEdit();
                           }
 
                           if (e.key === "Escape") cancelEdit();
                         }}
-                        className="textarea textarea-bordered min-h-10 min-w-0 flex-1 resize-none text-base-content"
+                        className="textarea textarea-bordered max-h-32 min-h-11 min-w-0 flex-1 resize-none text-base-content focus:border-primary focus:outline-none"
                         rows={1}
-                        autoFocus
+                        aria-label="Edit message"
+                        disabled={isSavingEdit}
                       />
-                      <button onClick={saveEdit} className="btn btn-xs btn-primary" aria-label="Save edit">
-                        <Check className="size-3" />
+                      <button
+                        type="button"
+                        onClick={saveEdit}
+                        className="btn btn-sm btn-primary btn-square flex-shrink-0 rounded-xl"
+                        aria-label="Save edit"
+                        disabled={!editingText.trim() || editingText.trim() === originalEditingText.trim() || isSavingEdit}
+                      >
+                        {isSavingEdit ? <Loader className="size-4 animate-spin" /> : <Check className="size-4" />}
                       </button>
-                      <button onClick={cancelEdit} className="btn btn-xs" aria-label="Cancel edit">
-                        <X className="size-3" />
+                      <button type="button" onClick={cancelEdit} className="btn btn-sm btn-ghost btn-square flex-shrink-0 rounded-xl" aria-label="Cancel edit" disabled={isSavingEdit}>
+                        <X className="size-4" />
                       </button>
                     </div>
                   ) : message.text && (
@@ -191,6 +252,29 @@ const ChatContainer = () => {
       </div>
 
       <MessageInput />
+
+      {messageToDelete && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-neutral/50 p-3 backdrop-blur-[2px] sm:items-center" role="dialog" aria-modal="true" aria-labelledby="delete-message-title" onClick={() => !isDeleting && setMessageToDelete(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-base-300 bg-base-100 p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start gap-3">
+              <span className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-error/10 text-error">
+                <AlertTriangle className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <h2 id="delete-message-title" className="font-semibold">Delete this message?</h2>
+                <p className="mt-1 text-sm text-base-content/60">This will remove it from the conversation for everyone.</p>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={() => setMessageToDelete(null)} disabled={isDeleting}>Cancel</button>
+              <button type="button" className="btn btn-error btn-sm min-w-24 rounded-xl" onClick={confirmDelete} disabled={isDeleting}>
+                {isDeleting ? <Loader className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                {isDeleting ? "Deleting" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {previewImage && (
         <div
