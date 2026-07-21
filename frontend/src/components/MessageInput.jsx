@@ -56,6 +56,8 @@ const MessageInput = () => {
     e.preventDefault();
     if (!text.trim() && !imagePreview) return;
 
+    textInputRef.current?.focus({ preventScroll: true });
+
     try {
       setbtnLoading(true);
 
@@ -69,20 +71,15 @@ const MessageInput = () => {
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      setTimeout(() => {
-        textInputRef.current?.focus();
-      }, 100);
-    } catch {
-      setTimeout(() => {
-        textInputRef.current?.focus();
-      }, 100);
+    } catch (error) {
+      console.error("Failed to send message:", error);
     } finally {
       setbtnLoading(false);
     }
   };
 
   return (
-    <div className="sticky bottom-0 z-10 w-full flex-shrink-0 border-t border-base-300/70 bg-base-100/95 p-2 sm:p-3">
+    <div className="sticky bottom-0 z-10 w-full flex-shrink-0 border-t border-base-300/70 bg-base-100/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 sm:p-3">
       {imagePreview && (
         <div className="mb-3 flex items-center gap-2">
           <div className="relative">
@@ -141,8 +138,10 @@ const MessageInput = () => {
         ) : (
           <button
             type="submit"
+            onPointerDown={(event) => event.preventDefault()}
             className="btn btn-primary btn-square min-h-10 w-10 flex-shrink-0 rounded-xl sm:min-h-11 sm:w-11"
             disabled={!text.trim() && !imagePreview}
+            aria-label="Send message"
           >
             <SendHorizontal className="size-5" />
           </button>

@@ -27,6 +27,22 @@ function App() {
   }, [checkAuth])
 
   useEffect(() => {
+    const updateViewportHeight = () => {
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+      document.documentElement.style.setProperty('--app-height', `${viewportHeight}px`)
+    }
+
+    updateViewportHeight()
+    window.addEventListener('resize', updateViewportHeight)
+    window.visualViewport?.addEventListener('resize', updateViewportHeight)
+
+    return () => {
+      window.removeEventListener('resize', updateViewportHeight)
+      window.visualViewport?.removeEventListener('resize', updateViewportHeight)
+    }
+  }, [])
+
+  useEffect(() => {
     updateThemeBrand(theme);
   }, [theme]);
 
@@ -45,7 +61,7 @@ function App() {
   )
 
   return (
-    <div data-theme={theme} className="flex h-[100dvh] flex-col overflow-hidden bg-base-100 text-base-content">
+    <div data-theme={theme} className="flex h-[var(--app-height)] flex-col overflow-hidden bg-base-100 text-base-content">
       <Navbar />
       
       <Routes>

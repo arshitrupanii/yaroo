@@ -12,6 +12,7 @@ const Navbar = () => {
     markNotificationsRead,
     notifications,
     groups,
+    selectedUser,
     setSelectedUser,
     setUserSearchText,
     unreadNotificationCount,
@@ -78,7 +79,7 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 flex-shrink-0 border-b border-base-300/60 bg-base-100/85 px-2 py-2 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-base-100/70 sm:px-4">
+    <header className={`${location.pathname === "/" && selectedUser ? "hidden lg:block" : "block"} sticky top-0 z-40 flex-shrink-0 border-b border-base-300/60 bg-base-100/85 px-2 py-2 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-base-100/70 sm:px-4`}>
       <div className="grid h-12 min-h-12 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-1.5 sm:gap-3">
       <div className="flex min-w-0 justify-start">
         <Link
