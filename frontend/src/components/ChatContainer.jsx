@@ -6,7 +6,7 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuhstore.js";
 import { formatMessageTime } from "../lib/utils";
-import { AlertTriangle, Check, CheckCheck, Loader, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, Check, CheckCheck, Loader, MoreHorizontal, Pencil, Trash2, X } from "lucide-react";
 
 const ChatContainer = () => {
   const [editingMessageId, setEditingMessageId] = useState(null);
@@ -17,6 +17,7 @@ const ChatContainer = () => {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
+  const [showScrollToLatest, setShowScrollToLatest] = useState(false);
   const {
     deleteMessage,
     editMessage,
@@ -27,9 +28,12 @@ const ChatContainer = () => {
   } = useChatStore();
 
   const { authUser } = useAuthStore();
+  const messagesContainerRef = useRef(null);
   const messageEndRef = useRef(null);
   const editInputRef = useRef(null);
   const composerInputRef = useRef(null);
+  const isNearLatestRef = useRef(true);
+  const activeConversationRef = useRef(null);
   const isGroup = selectedUser.type === "group";
 
   const getSenderId = (message) => (
@@ -42,11 +46,36 @@ const ChatContainer = () => {
       : ""
   );
 
+  const scrollToLatest = (behavior = "smooth") => {
+    messageEndRef.current?.scrollIntoView({ behavior, block: "end" });
+    isNearLatestRef.current = true;
+    setShowScrollToLatest(false);
+  };
+
+  const handleMessagesScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const distanceFromLatest = container.scrollHeight - container.scrollTop - container.clientHeight;
+    const isNearLatest = distanceFromLatest < 120;
+    isNearLatestRef.current = isNearLatest;
+    setShowScrollToLatest(!isNearLatest);
+  };
+
   useEffect(() => {
-    if (messageEndRef.current && messages) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (isMessagesLoading || !messageEndRef.current) return;
+
+    const conversationChanged = activeConversationRef.current !== selectedUser._id;
+    if (conversationChanged) {
+      activeConversationRef.current = selectedUser._id;
+      isNearLatestRef.current = true;
     }
-  }, [messages]);
+
+    if (conversationChanged || isNearLatestRef.current) {
+      const frame = requestAnimationFrame(() => scrollToLatest(conversationChanged ? "auto" : "smooth"));
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [isMessagesLoading, messages, selectedUser._id]);
 
   const startEditing = (message) => {
     setEditingMessageId(message._id);
@@ -124,7 +153,8 @@ const ChatContainer = () => {
     <div className="flex-1 flex flex-col overflow-hidden bg-base-100">
       <ChatHeader />
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-base-100 px-2 py-3 scroll-smooth sm:px-6 sm:py-4">
+      <div className="relative min-h-0 flex-1">
+      <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="h-full min-h-0 space-y-3 overflow-y-auto bg-base-100 px-2 py-3 scroll-smooth sm:px-6 sm:py-4">
         {messages.length === 0 && (
           <div className="h-full flex items-center justify-center text-center text-base-content/50">
             <div>
@@ -139,7 +169,7 @@ const ChatContainer = () => {
           const senderName = getSenderName(message);
 
           return (
-          <div key={message._id} className={`flex ${isMine ? "justify-end" : "justify-start"}`} ref={messageEndRef}>
+          <div key={message._id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
             <div className={`group flex max-w-[92%] flex-col sm:max-w-[66%] lg:max-w-[56%] ${isMine ? "items-end" : "items-start"}`}>
 
               <div className="relative">
@@ -257,6 +287,21 @@ const ChatContainer = () => {
           </div>
           );
         })}
+        <div ref={messageEndRef} className="h-px" aria-hidden="true" />
+      </div>
+
+      {showScrollToLatest && (
+        <button
+          type="button"
+          onPointerDown={(event) => event.preventDefault()}
+          onClick={() => scrollToLatest("smooth")}
+          className="btn btn-circle btn-sm absolute bottom-3 right-3 z-30 border border-base-300 bg-base-100 text-base-content shadow-lg hover:bg-base-200 sm:bottom-4 sm:right-5"
+          aria-label="Jump to latest message"
+          title="Latest message"
+        >
+          <ArrowDown className="size-4" />
+        </button>
+      )}
       </div>
 
       <MessageInput ref={composerInputRef} />
