@@ -3,13 +3,12 @@ import User from '../model/user.model.js';
 import { ApiError } from '../lib/ApiError.js';
 import { emitToUser } from '../lib/socket.js';
 
-const publicFields = '_id firstname username email profilePicture';
+const publicFields = '_id firstname username profilePicture';
 
 const toPublicUser = (user) => ({
     _id: user._id,
     firstname: user.firstname,
     username: user.username,
-    email: user.email,
     profilePicture: user.profilePicture
 });
 

@@ -4,6 +4,7 @@ import { ImagePlus, Loader, SendHorizontal, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 const MAX_IMAGE_SIZE_MB = 5;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 const MessageInput = forwardRef((_, forwardedInputRef) => {
   const [text, setText] = useState("");
@@ -19,8 +20,8 @@ const MessageInput = forwardRef((_, forwardedInputRef) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      toast.error("Choose a JPEG, PNG, WebP, or GIF image");
       e.target.value = "";
       return;
     }

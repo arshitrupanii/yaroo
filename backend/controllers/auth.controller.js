@@ -6,13 +6,14 @@ import cloudinary from '../lib/cloudinary.js';
 import { ApiError } from '../lib/ApiError.js';
 import { sendPasswordResetEmail } from '../lib/email.js';
 
-const normalizeEmail = (email) => email?.trim().toLowerCase();
+const normalizeEmail = (email) => typeof email === 'string' ? email.trim().toLowerCase() : '';
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const isStrongPassword = (password) => (
     typeof password === 'string' &&
     password.length >= 8 &&
+    password.length <= 128 &&
     /[a-z]/.test(password) &&
     /[A-Z]/.test(password) &&
     /\d/.test(password)
@@ -28,6 +29,8 @@ const toPublicUser = (user) => ({
 });
 
 const forgotPasswordResponse = { message: 'If an account exists for that email, a password reset link has been created' };
+const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
+const profileImagePattern = /^data:image\/(?:jpeg|png|webp);base64,([a-zA-Z0-9+/]+={0,2})$/;
 
 const buildUsername = (user) => (
     user.username ||
@@ -66,7 +69,7 @@ export const signup = async (req, res) => {
         throw new ApiError(400, 'Firstname must be between 2 and 30 characters', { code: 'VALIDATION_ERROR' });
     }
 
-    if (!isValidEmail(normalizedEmail)) {
+    if (normalizedEmail.length > 254 || !isValidEmail(normalizedEmail)) {
         throw new ApiError(400, 'Invalid email format', { code: 'VALIDATION_ERROR' });
     }
 
@@ -75,7 +78,7 @@ export const signup = async (req, res) => {
     }
 
     if (!isStrongPassword(password)) {
-        throw new ApiError(400, 'Password must be at least 8 characters and include uppercase, lowercase, and a number', { code: 'WEAK_PASSWORD' });
+        throw new ApiError(400, 'Password must be 8-128 characters and include uppercase, lowercase, and a number', { code: 'WEAK_PASSWORD' });
     }
 
     const existingUser = await User.findOne({
@@ -105,11 +108,11 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
-    if (!normalizedEmail || !password) {
+    if (!normalizedEmail || typeof password !== 'string' || !password || password.length > 128) {
         throw new ApiError(400, 'All fields are required', { code: 'VALIDATION_ERROR' });
     }
 
-    if (!isValidEmail(normalizedEmail)) {
+    if (normalizedEmail.length > 254 || !isValidEmail(normalizedEmail)) {
         throw new ApiError(400, 'Invalid email format', { code: 'VALIDATION_ERROR' });
     }
 
@@ -136,7 +139,8 @@ export const logout = async (req, res) => {
     res.clearCookie('ChatAppToken', {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        path: '/'
     });
 
     return res.status(200).json({ message: 'Logout successful' });
@@ -146,8 +150,19 @@ export const updateProfile = async (req, res) => {
     const { profilePicture } = req.body;
     const userId = req.user._id;
 
-    if (!profilePicture) {
+    if (typeof profilePicture !== 'string') {
         throw new ApiError(400, 'Profile pic is required', { code: 'VALIDATION_ERROR' });
+    }
+
+    const imageMatch = profilePicture.match(profileImagePattern);
+    if (!imageMatch) {
+        throw new ApiError(400, 'Only JPEG, PNG, or WebP profile images are allowed', { code: 'INVALID_IMAGE' });
+    }
+
+    const padding = imageMatch[1].endsWith('==') ? 2 : imageMatch[1].endsWith('=') ? 1 : 0;
+    const imageBytes = Math.floor(imageMatch[1].length * 3 / 4) - padding;
+    if (imageBytes > MAX_PROFILE_IMAGE_BYTES) {
+        throw new ApiError(413, 'Profile image must be 5MB or smaller', { code: 'IMAGE_TOO_LARGE' });
     }
 
     const uploadResponse = await cloudinary.uploader.upload(profilePicture, {
@@ -164,7 +179,7 @@ export const updateProfile = async (req, res) => {
         { new: true }
     );
 
-    return res.status(200).json(updatedUser);
+    return res.status(200).json(toPublicUser(updatedUser));
 };
 
 export const checkAuth = async (req, res) => {
@@ -213,12 +228,12 @@ export const resetPassword = async (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
 
-    if (!token) {
+    if (!/^[a-f0-9]{64}$/i.test(token || '')) {
         throw new ApiError(400, 'Reset token is required', { code: 'VALIDATION_ERROR' });
     }
 
     if (!isStrongPassword(password)) {
-        throw new ApiError(400, 'Password must be at least 8 characters and include uppercase, lowercase, and a number', { code: 'WEAK_PASSWORD' });
+        throw new ApiError(400, 'Password must be 8-128 characters and include uppercase, lowercase, and a number', { code: 'WEAK_PASSWORD' });
     }
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');

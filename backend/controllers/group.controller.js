@@ -3,8 +3,10 @@ import Message from "../model/message.model.js";
 import User from "../model/user.model.js";
 import { ApiError } from "../lib/ApiError.js";
 import { emitToUsers } from "../lib/socket.js";
+import mongoose from "mongoose";
 
-const userFields = "_id firstname username email profilePicture";
+const userFields = "_id firstname username profilePicture";
+const MAX_GROUP_MEMBERS = 100;
 
 const toObjectIdString = (value) => value.toString();
 
@@ -53,14 +55,21 @@ export const getGroups = async (req, res) => {
 export const createGroup = async (req, res) => {
   const creatorId = req.user._id;
   const name = req.body.name?.trim();
-  const memberIds = [...new Set((req.body.memberIds || []).map(String))].filter(Boolean);
+  const rawMemberIds = req.body.memberIds;
+  const memberIds = Array.isArray(rawMemberIds)
+    ? [...new Set(rawMemberIds.map(String))].filter(Boolean)
+    : [];
 
-  if (!name || name.length < 2) {
-    throw new ApiError(400, "Group name must be at least 2 characters", { code: "VALIDATION_ERROR" });
+  if (!name || name.length < 2 || name.length > 40) {
+    throw new ApiError(400, "Group name must be between 2 and 40 characters", { code: "VALIDATION_ERROR" });
   }
 
-  if (memberIds.length < 1) {
-    throw new ApiError(400, "Choose at least one friend", { code: "VALIDATION_ERROR" });
+  if (!Array.isArray(rawMemberIds) || memberIds.length < 1 || memberIds.length > MAX_GROUP_MEMBERS) {
+    throw new ApiError(400, `Choose between 1 and ${MAX_GROUP_MEMBERS} friends`, { code: "VALIDATION_ERROR" });
+  }
+
+  if (memberIds.some((memberId) => !mongoose.Types.ObjectId.isValid(memberId))) {
+    throw new ApiError(400, "Invalid group member", { code: "INVALID_ID" });
   }
 
   const creator = await User.findById(creatorId).select("friends");

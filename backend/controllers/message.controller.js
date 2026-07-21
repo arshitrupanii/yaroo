@@ -5,16 +5,52 @@ import cloudinary from '../lib/cloudinary.js';
 import { emitToUser, emitToUsers, emitToUserWithAck } from "../lib/socket.js";
 import { ApiError } from '../lib/ApiError.js';
 
-const userFields = "-password -createdAt -updatedAt -friendRequestsSent -friendRequestsReceived";
-const publicUserFields = "_id firstname username email profilePicture";
+const userFields = "_id firstname username profilePicture";
+const publicUserFields = "_id firstname username profilePicture";
+const MAX_MESSAGE_LENGTH = 4000;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const imageDataPattern = /^data:image\/(?:jpeg|png|webp|gif);base64,([a-zA-Z0-9+/]+={0,2})$/;
 
 const toPublicUser = (user) => ({
     _id: user._id,
     firstname: user.firstname,
     username: user.username,
-    email: user.email,
     profilePicture: user.profilePicture
 });
+
+const validateMessagePayload = (text, image) => {
+    if (text !== undefined && typeof text !== 'string') {
+        throw new ApiError(400, 'Message text must be a string', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (image !== undefined && image !== null && typeof image !== 'string') {
+        throw new ApiError(400, 'Invalid image', { code: 'VALIDATION_ERROR' });
+    }
+
+    const normalizedText = text?.trim() || '';
+    if (normalizedText.length > MAX_MESSAGE_LENGTH) {
+        throw new ApiError(400, `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`, { code: 'VALIDATION_ERROR' });
+    }
+
+    if (image) {
+        const match = image.match(imageDataPattern);
+        if (!match) {
+            throw new ApiError(400, 'Only JPEG, PNG, WebP, or GIF images are allowed', { code: 'INVALID_IMAGE' });
+        }
+
+        const padding = match[1].endsWith('==') ? 2 : match[1].endsWith('=') ? 1 : 0;
+        const imageBytes = Math.floor(match[1].length * 3 / 4) - padding;
+        if (imageBytes > MAX_IMAGE_BYTES) {
+            throw new ApiError(413, 'Image must be 5MB or smaller', { code: 'IMAGE_TOO_LARGE' });
+        }
+    }
+
+    if (!normalizedText && !image) {
+        throw new ApiError(400, 'Text or image is required', { code: 'VALIDATION_ERROR' });
+    }
+
+    return normalizedText;
+};
 
 const assertFriends = async (userId, otherUserId) => {
     const user = await User.findById(userId).select('friends');
@@ -77,7 +113,7 @@ const markConversationMessagesSeen = async (viewerId, senderId) => {
 export const getUserFromSidebar = async (req, res) => {
     const loggedInUserId = req.user._id;
     const currentUser = await User.findById(loggedInUserId)
-        .populate('friends', '_id firstname username email profilePicture')
+        .populate('friends', publicUserFields)
         .select('friends');
 
     const friends = currentUser?.friends || [];
@@ -145,7 +181,7 @@ export const getSearchUser = async (req, res) => {
     const loggedInUserId = req.user._id;
     const { username } = req.params;
 
-    if (!username || username.trim().length < 1) {
+    if (typeof username !== 'string' || username.trim().length < 1 || username.trim().length > 50) {
         throw new ApiError(400, 'Username is required', { code: 'VALIDATION_ERROR' });
     }
 
@@ -218,9 +254,7 @@ export const sendMessage = async (req, res) => {
 
     await assertFriends(senderId, receiverId);
 
-    if (!text && !image) {
-        throw new ApiError(400, 'Text or image is required', { code: 'VALIDATION_ERROR' });
-    }
+    const normalizedText = validateMessagePayload(text, image);
 
     let imageUrl;
 
@@ -239,7 +273,7 @@ export const sendMessage = async (req, res) => {
     const newMessage = await Message.create({
         senderId,
         receiverId,
-        text,
+        text: normalizedText,
         image: imageUrl,
         status: 'sent'
     });
@@ -262,9 +296,7 @@ export const sendGroupMessage = async (req, res) => {
         throw new ApiError(403, 'You are not in this group', { code: 'GROUP_FORBIDDEN' });
     }
 
-    if (!text && !image) {
-        throw new ApiError(400, 'Text or image is required', { code: 'VALIDATION_ERROR' });
-    }
+    const normalizedText = validateMessagePayload(text, image);
 
     let imageUrl;
 
@@ -283,7 +315,7 @@ export const sendGroupMessage = async (req, res) => {
     const newMessage = await Message.create({
         senderId,
         groupId,
-        text,
+        text: normalizedText,
         image: imageUrl,
         status: 'sent',
         readBy: [senderId]
@@ -306,8 +338,12 @@ export const editMessage = async (req, res) => {
     const { text } = req.body;
     const senderId = req.user._id;
 
-    if (!text?.trim()) {
+    if (typeof text !== 'string' || !text.trim()) {
         throw new ApiError(400, 'Message text is required', { code: 'VALIDATION_ERROR' });
+    }
+
+    if (text.trim().length > MAX_MESSAGE_LENGTH) {
+        throw new ApiError(400, `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`, { code: 'VALIDATION_ERROR' });
     }
 
     const message = await Message.findOne({ _id: id, senderId, deletedAt: { $exists: false } });

@@ -5,7 +5,8 @@ import http from "http";
 import express from "express";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import { getAllowedOrigins } from "./cors.js";
+import mongoose from "mongoose";
+import { getAllowedOrigins, isAllowedRequestOrigin } from "./cors.js";
 import { verifyTokenOptions } from "./utils.js";
 import User from "../model/user.model.js";
 
@@ -26,12 +27,18 @@ const io = new Server(server, {
     skipMiddlewares: false
   },
   pingInterval: 25000,
-  pingTimeout: 20000
+  pingTimeout: 20000,
+  allowRequest: (req, callback) => {
+    const protocol = req.headers["x-forwarded-proto"]?.split(",")[0]?.trim()
+      || (req.socket.encrypted ? "https" : "http");
+    callback(null, isAllowedRequestOrigin(req.headers.origin, req.headers.host, protocol));
+  }
 });
 
 const userSocketMap = {};
 let redisClients = null;
 const ONLINE_USERS_KEY = "yaroo:online-users";
+const TYPING_AUTH_TTL_MS = 60 * 1000;
 
 const userRoom = (userId) => `user:${userId}`;
 
@@ -157,6 +164,7 @@ io.on("connection", async (socket) => {
   }
 
   const userId = socket.userId;
+  const typingAuthorizationCache = new Map();
   if (userId) {
     if (!userSocketMap[userId]) userSocketMap[userId] = new Set();
     userSocketMap[userId].add(socket.id);
@@ -170,12 +178,33 @@ io.on("connection", async (socket) => {
 
   await emitOnlineUsers();
 
-  socket.on("typing", ({ receiverId }) => {
-    if (receiverId) emitToUser(receiverId, "typing", { senderId: userId });
+  const canSendTypingEvent = async (receiverId) => {
+    if (typeof receiverId !== "string" || !mongoose.Types.ObjectId.isValid(receiverId) || receiverId === userId) return false;
+
+    const cachedUntil = typingAuthorizationCache.get(receiverId);
+    if (cachedUntil && cachedUntil > Date.now()) return true;
+
+    const areFriends = await User.exists({ _id: userId, friends: receiverId });
+    if (!areFriends) return false;
+
+    typingAuthorizationCache.set(receiverId, Date.now() + TYPING_AUTH_TTL_MS);
+    return true;
+  };
+
+  socket.on("typing", async ({ receiverId } = {}) => {
+    try {
+      if (await canSendTypingEvent(receiverId)) emitToUser(receiverId, "typing", { senderId: userId });
+    } catch (error) {
+      logSocketError("Failed to authorize typing event", error);
+    }
   });
 
-  socket.on("stopTyping", ({ receiverId }) => {
-    if (receiverId) emitToUser(receiverId, "stopTyping", { senderId: userId });
+  socket.on("stopTyping", async ({ receiverId } = {}) => {
+    try {
+      if (await canSendTypingEvent(receiverId)) emitToUser(receiverId, "stopTyping", { senderId: userId });
+    } catch (error) {
+      logSocketError("Failed to authorize stop-typing event", error);
+    }
   });
 
   socket.on("disconnect", async () => {

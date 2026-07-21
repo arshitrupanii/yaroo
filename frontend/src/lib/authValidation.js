@@ -4,8 +4,8 @@ const usernamePattern = /^[a-z0-9_]{3,24}$/;
 export const passwordRules = [
   {
     id: "length",
-    label: "8+ characters",
-    test: (password) => password.length >= 8,
+    label: "8-128 characters",
+    test: (password) => password.length >= 8 && password.length <= 128,
   },
   {
     id: "lower",

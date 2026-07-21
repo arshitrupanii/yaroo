@@ -17,6 +17,13 @@ export const getAllowedOrigins = () => {
   return [...new Set(origins)];
 };
 
+export const isAllowedRequestOrigin = (origin, host, protocol = 'http') => {
+  if (!origin) return true;
+
+  const requestOrigin = host ? `${protocol}://${host}` : null;
+  return origin === requestOrigin || getAllowedOrigins().includes(origin);
+};
+
 export const corsOptions = {
   origin(origin, callback) {
     const allowedOrigins = getAllowedOrigins();

@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useAuthStore } from "../store/useAuhstore";
 import { Camera, Mail, User } from "lucide-react";
 import AvatarInitials from "../components/AvatarInitials";
+import toast from "react-hot-toast";
+
+const MAX_PROFILE_IMAGE_SIZE_MB = 5;
+const ALLOWED_PROFILE_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
@@ -11,14 +15,26 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (!ALLOWED_PROFILE_IMAGE_TYPES.has(file.type)) {
+      toast.error("Choose a JPEG, PNG, or WebP image");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_PROFILE_IMAGE_SIZE_MB * 1024 * 1024) {
+      toast.error(`Profile image must be ${MAX_PROFILE_IMAGE_SIZE_MB}MB or smaller`);
+      e.target.value = "";
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.readAsDataURL(file);
 
     reader.onload = async () => {
       const base64Image = reader.result;
-      setSelectedImg(base64Image);
-      await updateProfile({ profilePicture: base64Image });
+      const didUpdate = await updateProfile({ profilePicture: base64Image });
+      if (didUpdate) setSelectedImg(base64Image);
     };
   };
 
