@@ -1,16 +1,17 @@
-import { useRef, useState } from "react";
+import { forwardRef, useRef, useState } from "react";
 import { useChatStore } from "../store/useChatstore";
 import { ImagePlus, Loader, SendHorizontal, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 const MAX_IMAGE_SIZE_MB = 5;
 
-const MessageInput = () => {
+const MessageInput = forwardRef((_, forwardedInputRef) => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const [btnLoading, setbtnLoading] = useState(false);
   const fileInputRef = useRef(null);
-  const textInputRef = useRef(null);
+  const fallbackInputRef = useRef(null);
+  const textInputRef = forwardedInputRef || fallbackInputRef;
   const typingTimerRef = useRef(null);
   const { emitStopTyping, emitTyping, sendMessage } = useChatStore();
 
@@ -149,5 +150,7 @@ const MessageInput = () => {
       </form>
     </div>
   );
-};
+});
+
+MessageInput.displayName = "MessageInput";
 export default MessageInput;

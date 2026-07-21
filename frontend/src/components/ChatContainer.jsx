@@ -29,6 +29,7 @@ const ChatContainer = () => {
   const { authUser } = useAuthStore();
   const messageEndRef = useRef(null);
   const editInputRef = useRef(null);
+  const composerInputRef = useRef(null);
   const isGroup = selectedUser.type === "group";
 
   const getSenderId = (message) => (
@@ -78,6 +79,7 @@ const ChatContainer = () => {
     setEditingMessageId(null);
     setEditingText("");
     setOriginalEditingText("");
+    composerInputRef.current?.focus({ preventScroll: true });
   };
 
   const confirmDelete = async () => {
@@ -87,7 +89,10 @@ const ChatContainer = () => {
     const didDelete = await deleteMessage(messageToDelete._id);
     setIsDeleting(false);
 
-    if (didDelete) setMessageToDelete(null);
+    if (didDelete) {
+      setMessageToDelete(null);
+      composerInputRef.current?.focus({ preventScroll: true });
+    }
   };
 
   const renderStatus = (message) => {
@@ -142,6 +147,7 @@ const ChatContainer = () => {
                   <div className="absolute -left-9 top-1/2 z-20 -translate-y-1/2">
                     <button
                       type="button"
+                      onPointerDown={(event) => event.preventDefault()}
                       onClick={() => setActiveActionsMessageId((current) => current === message._id ? null : message._id)}
                       className="btn btn-ghost btn-xs btn-circle text-base-content/50 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
                       aria-label="Message actions"
@@ -153,12 +159,13 @@ const ChatContainer = () => {
                     {activeActionsMessageId === message._id && (
                       <div className="absolute bottom-full right-0 mb-1 w-32 overflow-hidden rounded-xl border border-base-300 bg-base-100 p-1 shadow-xl">
                         {message.text && (
-                          <button type="button" onClick={() => startEditing(message)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-base-200">
+                          <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => startEditing(message)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-base-200">
                             <Pencil className="size-3.5" /> Edit
                           </button>
                         )}
                         <button
                           type="button"
+                          onPointerDown={(event) => event.preventDefault()}
                           onClick={() => {
                             setMessageToDelete(message);
                             setActiveActionsMessageId(null);
@@ -221,6 +228,7 @@ const ChatContainer = () => {
                       />
                       <button
                         type="button"
+                        onPointerDown={(event) => event.preventDefault()}
                         onClick={saveEdit}
                         className="btn btn-sm btn-primary btn-square flex-shrink-0 rounded-xl"
                         aria-label="Save edit"
@@ -228,7 +236,7 @@ const ChatContainer = () => {
                       >
                         {isSavingEdit ? <Loader className="size-4 animate-spin" /> : <Check className="size-4" />}
                       </button>
-                      <button type="button" onClick={cancelEdit} className="btn btn-sm btn-ghost btn-square flex-shrink-0 rounded-xl" aria-label="Cancel edit" disabled={isSavingEdit}>
+                      <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={cancelEdit} className="btn btn-sm btn-ghost btn-square flex-shrink-0 rounded-xl" aria-label="Cancel edit" disabled={isSavingEdit}>
                         <X className="size-4" />
                       </button>
                     </div>
@@ -251,10 +259,10 @@ const ChatContainer = () => {
         })}
       </div>
 
-      <MessageInput />
+      <MessageInput ref={composerInputRef} />
 
       {messageToDelete && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-neutral/50 p-3 backdrop-blur-[2px] sm:items-center" role="dialog" aria-modal="true" aria-labelledby="delete-message-title" onClick={() => !isDeleting && setMessageToDelete(null)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-neutral/50 p-3 backdrop-blur-[2px] sm:items-center" role="dialog" aria-modal="true" aria-labelledby="delete-message-title" onPointerDown={(event) => event.preventDefault()} onClick={() => !isDeleting && setMessageToDelete(null)}>
           <div className="w-full max-w-sm rounded-2xl border border-base-300 bg-base-100 p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start gap-3">
               <span className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-error/10 text-error">
@@ -266,8 +274,8 @@ const ChatContainer = () => {
               </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" className="btn btn-ghost btn-sm rounded-xl" onClick={() => setMessageToDelete(null)} disabled={isDeleting}>Cancel</button>
-              <button type="button" className="btn btn-error btn-sm min-w-24 rounded-xl" onClick={confirmDelete} disabled={isDeleting}>
+              <button type="button" className="btn btn-ghost btn-sm rounded-xl" onPointerDown={(event) => event.preventDefault()} onClick={() => setMessageToDelete(null)} disabled={isDeleting}>Cancel</button>
+              <button type="button" className="btn btn-error btn-sm min-w-24 rounded-xl" onPointerDown={(event) => event.preventDefault()} onClick={confirmDelete} disabled={isDeleting}>
                 {isDeleting ? <Loader className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
                 {isDeleting ? "Deleting" : "Delete"}
               </button>
