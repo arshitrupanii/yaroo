@@ -92,10 +92,11 @@ const MessageInput = forwardRef((_, forwardedInputRef) => {
             />
             <button
               onClick={removeImage}
-              className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-base-300"
+              className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-base-300 shadow-sm"
               type="button"
+              aria-label="Remove attached image"
             >
-              <X className="size-3" />
+              <X className="size-3.5" />
             </button>
           </div>
         </div>
@@ -111,6 +112,10 @@ const MessageInput = forwardRef((_, forwardedInputRef) => {
             type="text"
             className="input input-bordered min-h-10 w-full rounded-xl text-sm sm:min-h-11"
             placeholder="Type a message..."
+            aria-label="Message"
+            autoComplete="off"
+            enterKeyHint="send"
+            maxLength={4000}
             value={text}
             onChange={handleTextChange}
           />

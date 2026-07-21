@@ -12,8 +12,8 @@ const SettingsPage = () => {
   const { theme, setTheme } = Usethemes();
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-base-100">
-      <div className="container mx-auto px-4 py-10 max-w-5xl">
+    <div className="min-h-[calc(var(--app-height)-4rem)] bg-base-100">
+      <div className="container mx-auto max-w-5xl px-3 py-6 sm:px-4 sm:py-10">
       <div className="space-y-6">
         <div className="flex flex-col gap-1">
           <h2 className="text-lg font-semibold">Theme</h2>
@@ -105,12 +105,12 @@ const SettingsPage = () => {
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      className="input input-bordered flex-1 text-sm h-10"
+                      className="input input-bordered h-10 min-w-0 flex-1 text-sm"
                       placeholder="Type a message..."
                       value="This is a preview"
                       readOnly
                     />
-                    <button className="btn btn-primary h-10 min-h-0">
+                    <button className="btn btn-primary btn-square h-10 min-h-10 w-10 flex-shrink-0">
                       <Send size={18} />
                     </button>
                   </div>

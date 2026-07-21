@@ -13,6 +13,7 @@ const ChatContainer = () => {
   const [editingText, setEditingText] = useState("");
   const [originalEditingText, setOriginalEditingText] = useState("");
   const [activeActionsMessageId, setActiveActionsMessageId] = useState(null);
+  const [actionMenuPlacement, setActionMenuPlacement] = useState("up");
   const [messageToDelete, setMessageToDelete] = useState(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -46,6 +47,12 @@ const ChatContainer = () => {
       : ""
   );
 
+  const resizeEditInput = (input) => {
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, 128)}px`;
+  };
+
   const scrollToLatest = (behavior = "smooth") => {
     messageEndRef.current?.scrollIntoView({ behavior, block: "end" });
     isNearLatestRef.current = true;
@@ -60,6 +67,7 @@ const ChatContainer = () => {
     const isNearLatest = distanceFromLatest < 120;
     isNearLatestRef.current = isNearLatest;
     setShowScrollToLatest(!isNearLatest);
+    setActiveActionsMessageId(null);
   };
 
   useEffect(() => {
@@ -91,6 +99,7 @@ const ChatContainer = () => {
     const cursorPosition = input.value.length;
     input.focus({ preventScroll: true });
     input.setSelectionRange(cursorPosition, cursorPosition);
+    resizeEditInput(input);
   }, [editingMessageId]);
 
   const saveEdit = async () => {
@@ -154,15 +163,17 @@ const ChatContainer = () => {
       <ChatHeader />
 
       <div className="chat-wallpaper relative min-h-0 flex-1 overflow-hidden">
-      <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="relative z-10 h-full min-h-0 space-y-3 overflow-y-auto px-2 py-3 scroll-smooth sm:px-6 sm:py-4">
+      <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="relative z-10 flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain px-2 py-3 scroll-smooth sm:px-6 sm:py-4">
         {messages.length === 0 && (
-          <div className="h-full flex items-center justify-center text-center text-base-content/50">
+          <div className="flex flex-1 items-center justify-center text-center text-base-content/50">
             <div>
               <div className="font-medium text-base-content">No messages yet</div>
               <p className="text-sm mt-1">Start the conversation with {isGroup ? selectedUser.name : selectedUser.firstname}.</p>
             </div>
           </div>
         )}
+
+        {messages.length > 0 && <div className="min-h-0 flex-1" aria-hidden="true" />}
 
         {messages.map((message) => {
           const isMine = getSenderId(message) === authUser._id;
@@ -178,7 +189,11 @@ const ChatContainer = () => {
                     <button
                       type="button"
                       onPointerDown={(event) => event.preventDefault()}
-                      onClick={() => setActiveActionsMessageId((current) => current === message._id ? null : message._id)}
+                      onClick={(event) => {
+                        const buttonTop = event.currentTarget.getBoundingClientRect().top;
+                        setActionMenuPlacement(buttonTop < 140 ? "down" : "up");
+                        setActiveActionsMessageId((current) => current === message._id ? null : message._id);
+                      }}
                       className="btn btn-ghost btn-xs btn-circle text-base-content/50 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
                       aria-label="Message actions"
                       aria-expanded={activeActionsMessageId === message._id}
@@ -187,7 +202,7 @@ const ChatContainer = () => {
                     </button>
 
                     {activeActionsMessageId === message._id && (
-                      <div className="absolute bottom-full right-0 mb-1 w-32 overflow-hidden rounded-xl border border-base-300 bg-base-100 p-1 shadow-xl">
+                      <div className={`absolute left-0 w-32 overflow-hidden rounded-xl border border-base-300 bg-base-100 p-1 shadow-xl ${actionMenuPlacement === "down" ? "top-full mt-1" : "bottom-full mb-1"}`}>
                         {message.text && (
                           <button type="button" onPointerDown={(event) => event.preventDefault()} onClick={() => startEditing(message)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-base-200">
                             <Pencil className="size-3.5" /> Edit
@@ -242,7 +257,10 @@ const ChatContainer = () => {
                       <textarea
                         ref={editInputRef}
                         value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
+                        onChange={(e) => {
+                          setEditingText(e.target.value);
+                          resizeEditInput(e.currentTarget);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.shiftKey) {
                             e.preventDefault();
@@ -251,8 +269,9 @@ const ChatContainer = () => {
 
                           if (e.key === "Escape") cancelEdit();
                         }}
-                        className="textarea textarea-bordered max-h-32 min-h-11 min-w-0 flex-1 resize-none text-base-content focus:border-primary focus:outline-none"
+                        className="textarea textarea-bordered max-h-32 min-h-11 min-w-0 flex-1 resize-none overflow-y-auto text-base-content focus:border-primary focus:outline-none"
                         rows={1}
+                        maxLength={4000}
                         aria-label="Edit message"
                         disabled={isSavingEdit}
                       />
@@ -307,7 +326,7 @@ const ChatContainer = () => {
       <MessageInput ref={composerInputRef} />
 
       {messageToDelete && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-neutral/50 p-3 backdrop-blur-[2px] sm:items-center" role="dialog" aria-modal="true" aria-labelledby="delete-message-title" onPointerDown={(event) => event.preventDefault()} onClick={() => !isDeleting && setMessageToDelete(null)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-neutral/50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-[2px] sm:items-center sm:p-3" role="dialog" aria-modal="true" aria-labelledby="delete-message-title" onPointerDown={(event) => event.preventDefault()} onClick={() => !isDeleting && setMessageToDelete(null)}>
           <div className="w-full max-w-sm rounded-2xl border border-base-300 bg-base-100 p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-start gap-3">
               <span className="flex size-10 flex-shrink-0 items-center justify-center rounded-full bg-error/10 text-error">
@@ -338,7 +357,7 @@ const ChatContainer = () => {
         >
           <button
             type="button"
-            className="btn btn-ghost btn-sm btn-circle absolute right-4 top-4 bg-base-100/90"
+            className="btn btn-ghost btn-sm btn-circle absolute right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] bg-base-100/90"
             onClick={() => setPreviewImage(null)}
             aria-label="Close image preview"
           >
@@ -347,7 +366,7 @@ const ChatContainer = () => {
           <img
             src={previewImage}
             alt="Message attachment preview"
-            className="max-h-[86vh] max-w-[92vw] rounded-lg object-contain shadow-2xl"
+            className="max-h-[86dvh] max-w-[92vw] rounded-lg object-contain shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           />
         </div>

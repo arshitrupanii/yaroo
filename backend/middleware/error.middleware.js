@@ -36,6 +36,12 @@ const normalizeError = (error) => {
         });
     }
 
+    if (error.message?.startsWith('CORS blocked origin:')) {
+        return new ApiError(403, 'Cross-site request blocked', {
+            code: 'UNTRUSTED_ORIGIN'
+        });
+    }
+
     if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
         return new ApiError(400, 'Invalid JSON body', {
             code: 'INVALID_JSON'

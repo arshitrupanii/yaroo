@@ -289,7 +289,7 @@ const Sidebar = () => {
       )}
 
       {!isSearching && friendRequests.received.length > 0 && (
-        <div className="space-y-2 border-b border-base-300/70 p-3">
+        <div className="max-h-[35dvh] space-y-2 overflow-y-auto border-b border-base-300/70 p-3 overscroll-contain">
           <div className="flex items-center gap-2 text-xs font-semibold text-base-content/60">
             <Inbox className="size-3.5" />
             Friend requests
@@ -314,7 +314,7 @@ const Sidebar = () => {
         </div>
       )}
 
-      <div className="min-h-0 w-full flex-1 overflow-y-auto py-1">
+      <div className="min-h-0 w-full flex-1 overflow-y-auto pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1">
         {isUsersLoading && skeletonRows.map((_, index) => (
           <div key={index} className="flex w-full items-center gap-3 p-3">
             <div className="skeleton size-10 flex-shrink-0 rounded-full" />

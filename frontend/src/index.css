@@ -38,11 +38,30 @@
     overflow-x: hidden;
   }
 
+  body.chat-page-open {
+    height: var(--app-height);
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
   button,
   a,
   input,
   textarea {
     @apply transition-colors duration-150 ease-out;
+  }
+
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
+  @media (max-width: 767px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
   }
 
   * {

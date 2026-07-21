@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Route, Routes,Navigate } from 'react-router-dom'
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom'
 
 import Navbar from './components/Navbar'
 import Homepage from './Pages/Homepage'
@@ -21,6 +21,8 @@ function App() {
   const { authUser, checkAuth, isCheckingAuth, socket } = useAuthStore();
   const { subscribeToMessages, unsubscribeFromMessages } = useChatStore();
   const {theme} = Usethemes()
+  const location = useLocation()
+  const isChatPage = location.pathname === '/' && Boolean(authUser)
 
   useEffect(() => {
     checkAuth()
@@ -43,6 +45,11 @@ function App() {
   }, [])
 
   useEffect(() => {
+    document.body.classList.toggle('chat-page-open', isChatPage)
+    return () => document.body.classList.remove('chat-page-open')
+  }, [isChatPage])
+
+  useEffect(() => {
     updateThemeBrand(theme);
   }, [theme]);
 
@@ -61,7 +68,10 @@ function App() {
   )
 
   return (
-    <div data-theme={theme} className="flex h-[var(--app-height)] flex-col overflow-hidden bg-base-100 text-base-content">
+    <div
+      data-theme={theme}
+      className={`${isChatPage ? 'flex h-[var(--app-height)] flex-col overflow-hidden' : 'min-h-[var(--app-height)]'} bg-base-100 text-base-content`}
+    >
       <Navbar />
       
       <Routes>

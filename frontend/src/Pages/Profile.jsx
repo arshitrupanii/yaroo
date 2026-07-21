@@ -39,8 +39,8 @@ const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-base-100">
-      <div className="max-w-2xl mx-auto px-4 py-10">
+    <div className="min-h-[calc(var(--app-height)-4rem)] bg-base-100">
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
         <div className="space-y-8">
           <div>
             <h1 className="text-2xl font-semibold">Profile</h1>
@@ -87,7 +87,7 @@ const ProfilePage = () => {
                 <User className="w-4 h-4" />
                 Full Name
               </div>
-              <p className="input input-bordered flex items-center">{authUser?.firstname}</p>
+              <p className="input input-bordered flex min-w-0 items-center truncate">{authUser?.firstname}</p>
             </div>
 
             <div className="space-y-1.5">
@@ -95,7 +95,7 @@ const ProfilePage = () => {
                 <Mail className="w-4 h-4" />
                 Email Address
               </div>
-              <p className="input input-bordered flex items-center">{authUser?.email}</p>
+              <p className="input input-bordered flex min-w-0 items-center truncate">{authUser?.email}</p>
             </div>
 
             <div className="space-y-1.5">
@@ -103,7 +103,7 @@ const ProfilePage = () => {
                 <User className="w-4 h-4" />
                 Username
               </div>
-              <p className="input input-bordered flex items-center">@{authUser?.username || "not-set"}</p>
+              <p className="input input-bordered flex min-w-0 items-center truncate">@{authUser?.username || "not-set"}</p>
             </div>
           </div>
 

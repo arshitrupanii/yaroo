@@ -62,7 +62,7 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] bg-base-100 flex items-center justify-center px-4 py-8">
+    <div className="flex min-h-[calc(var(--app-height)-4rem)] items-center justify-center bg-base-100 px-4 py-6 sm:py-8">
       <div className="w-full max-w-md p-2 sm:p-4">
         <div className="w-full space-y-7">
           <div className="text-center mb-8">
