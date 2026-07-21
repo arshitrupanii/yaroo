@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .chat-wallpaper {
+    background-color: hsl(var(--b1));
+    isolation: isolate;
+  }
+
+  .chat-wallpaper::before {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    content: "";
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 18px 18px, hsl(var(--bc) / 0.035) 1.5px, transparent 1.7px),
+      radial-gradient(circle at 10px 10px, hsl(var(--p) / 0.025) 1px, transparent 1.2px);
+    background-position: 0 0, 12px 12px;
+    background-size: 36px 36px, 28px 28px;
+  }
+}
+
 @layer base {
   :root {
     --app-height: 100dvh;

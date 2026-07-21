@@ -153,8 +153,8 @@ const ChatContainer = () => {
     <div className="flex-1 flex flex-col overflow-hidden bg-base-100">
       <ChatHeader />
 
-      <div className="relative min-h-0 flex-1">
-      <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="h-full min-h-0 space-y-3 overflow-y-auto bg-base-100 px-2 py-3 scroll-smooth sm:px-6 sm:py-4">
+      <div className="chat-wallpaper relative min-h-0 flex-1 overflow-hidden">
+      <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="relative z-10 h-full min-h-0 space-y-3 overflow-y-auto px-2 py-3 scroll-smooth sm:px-6 sm:py-4">
         {messages.length === 0 && (
           <div className="h-full flex items-center justify-center text-center text-base-content/50">
             <div>
